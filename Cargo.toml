@@ -1,0 +1,22 @@
+[package]
+name = "bit_flipper"
+version = "0.1.0"
+edition = "2021"
+authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
+license = "GPL-3.0-or-later"
+homepage = "https://youtu.be/dQw4w9WgXcQ"
+description = "Bit manipulation distortion plugin."
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
+    "assert_process_allocs",
+    "standalone",
+] }
+nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+random = "^0.14.0"
+
+[workspace]
+members = ["xtask"]
