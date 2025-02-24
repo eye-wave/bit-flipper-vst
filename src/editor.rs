@@ -76,10 +76,6 @@ pub(crate) fn create(
         }
         .build(cx);
 
-        if let Err(err) = cx.add_stylesheet(include_style!("src/editor/theme.css")) {
-            nih_error!("Failed to load stylesheet: {err:?}")
-        }
-
         VStack::new(cx, |cx| {
             Label::new(cx, "Bit flipper")
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
