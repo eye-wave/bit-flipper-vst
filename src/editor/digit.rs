@@ -4,7 +4,7 @@ use nih_plug_vizia::{vizia::prelude::*, widgets::param_base::ParamWidgetBase};
 #[derive(Lens)]
 pub struct Digit {
     param_base: ParamWidgetBase,
-    bit: u8
+    bit: u8,
 }
 
 pub enum DigitEvents {
@@ -79,7 +79,7 @@ impl View for Digit {
             | WindowEvent::MouseDoubleClick(MouseButton::Left)
             | WindowEvent::MouseTripleClick(MouseButton::Left) => {
                 self.toggle_value(cx);
-                
+
                 cx.emit(DigitEvents::Flip(self.bit));
                 meta.consume();
             }

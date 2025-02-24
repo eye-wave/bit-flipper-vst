@@ -29,8 +29,8 @@ struct Data {
 
 fn sine_wave() -> [f32; 256] {
     let mut wave = [0.0; 256];
-    for i in 0..256 {
-        wave[i] = (i as f32 / 256.0 * TAU).sin();
+    for (i, sample) in wave.iter_mut().enumerate() {
+        *sample = (i as f32 / 256.0 * TAU).sin();
     }
     wave
 }
@@ -57,7 +57,7 @@ impl Model for Data {
 
 // Makes sense to also define this here, makes it a bit easier to keep track of
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (544, 438))
+    ViziaState::new(|| (544, 358))
 }
 
 pub(crate) fn create(
@@ -85,9 +85,10 @@ pub(crate) fn create(
                 .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
                 .font_weight(FontWeightKeyword::Thin)
                 .font_size(30.0)
-                .height(Pixels(50.0))
-                .child_top(Stretch(1.0))
-                .child_bottom(Pixels(0.0));
+                .child_top(Pixels(16.0))
+                .child_bottom(Pixels(0.0))
+                .child_left(Stretch(1.0))
+                .child_right(Stretch(1.0));
 
             VStack::new(cx, |cx| {
                 Binding::new(cx, Data::bits, |cx, bits| {
@@ -97,6 +98,8 @@ pub(crate) fn create(
                         Label::new(cx, &format!("u32: {}", bits));
                         Label::new(cx, &format!("f32: {}", f32::from_bits(bits)));
                     })
+                    .height(Pixels(48.0))
+                    .child_space(Pixels(0.0))
                     .color(Color::white());
                 });
 
@@ -136,40 +139,46 @@ pub(crate) fn create(
                     Digit::new(cx, 1, RED.into(), Data::params, |p| &p.bits.mask_bit_2);
                     Digit::new(cx, 0, RED.into(), Data::params, |p| &p.bits.mask_bit_1);
                 })
+                .height(Pixels(16.0))
                 .width(Stretch(1.0));
 
                 HStack::new(cx, |cx| {
-                    Label::new(cx, "Sign").background_color(Color::from(BLUE));
+                    Label::new(cx, "Sign")
+                        .background_color(Color::from(BLUE))
+                        .border_bottom_left_radius(Pixels(4.0));
                     Label::new(cx, "Exponent")
                         .width(Stretch(1.0))
                         .background_color(Color::from(GREEN));
                     Label::new(cx, "Fraction")
+                        .border_bottom_right_radius(Pixels(4.0))
                         .width(Pixels(368.0))
                         .background_color(Color::from(RED));
                 })
-                .width(Stretch(1.0));
+                .height(Pixels(16.0))
+                .width(Pixels(512.0));
             })
+            .child_space(Pixels(0.0))
             .color(Color::black())
+            .height(Pixels(80.0))
             .width(Pixels(512.0));
 
-            Mode::new(cx, Data::params, |p| &p.mode);
-
             VStack::new(cx, |cx| {
-                VStack::new(cx, |cx| {
-                    Monitor::new(cx, Data::buffer);
-                })
-                .background_color(Color::from("#202020"))
-                .width(Pixels(128.0))
-                .height(Pixels(128.0));
+                Mode::new(cx, Data::params, |p| &p.mode);
+
+                VStack::new(cx, |cx| Monitor::new(cx, Data::buffer))
+                    .child_space(Pixels(0.0))
+                    .background_color(Color::from("#202020"))
+                    .width(Pixels(128.0))
+                    .height(Pixels(128.0));
             })
+            .height(Pixels(192.0))
             .child_left(Stretch(1.0))
             .child_right(Stretch(1.0));
         })
-        .background_color(Color::from("#222"))
-        .color(Color::from("#eee"))
         .row_between(Pixels(0.0))
-        .child_left(Stretch(1.0))
-        .child_right(Stretch(1.0));
+        .child_space(Pixels(0.0))
+        .background_color(Color::from("#222"))
+        .color(Color::from("#eee"));
 
         ResizeHandle::new(cx);
     })
