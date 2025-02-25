@@ -1,8 +1,7 @@
 # Bit flipper
 
 Very simple distortion plugin that does direct bit manipulation on audio samples, madewith [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Vizia](https://github.com/vizia/vizia).
-
-<center><img src="./assets/plugin-preview.webp"></center>
+<p align="center"><img src="./assets/plugin-preview.webp"></p>
 
 ## Tested on:
 - Bitwig on Pop os 22.04 🐧
