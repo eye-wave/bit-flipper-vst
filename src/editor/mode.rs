@@ -1,6 +1,7 @@
 use nih_plug::prelude::*;
 use nih_plug_vizia::{vizia::prelude::*, widgets::param_base::ParamWidgetBase};
 
+use super::StateUI;
 use crate::FlipModes;
 
 #[derive(Lens)]
@@ -78,7 +79,7 @@ impl Mode {
 
 impl View for Mode {
     fn event(&mut self, cx: &mut EventContext, event: &mut Event) {
-        event.map(|state_change, _| match state_change {
+        event.map(|state_change, _meta| match state_change {
             ModeEvents::Set(variant) => {
                 let helper_param = EnumParam::new("helper", FlipModes::Xor);
                 let value = helper_param.preview_normalized(*variant);
@@ -86,6 +87,8 @@ impl View for Mode {
                 self.param_base.begin_set_parameter(cx);
                 self.param_base.set_normalized_value(cx, value);
                 self.param_base.end_set_parameter(cx);
+
+                cx.emit(StateUI::Update(None, Some(*variant)));
             }
         })
     }

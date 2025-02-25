@@ -1,15 +1,12 @@
-use digit::{Digit, DigitEvents};
+use digit::Digit;
 use mode::Mode;
-use monitor::Monitor;
-use nih_plug::nih_error;
+use monitor::{Monitor, MonitorParams};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::prelude::*;
-use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
-
-use std::f32::consts::TAU;
 use std::sync::Arc;
 
+use crate::model::FlipModes;
 use crate::BitFlipperParams;
 
 mod digit;
@@ -20,35 +17,26 @@ const BLUE: &str = "#51e2e0";
 const GREEN: &str = "#51e273";
 const RED: &str = "#e2517a";
 
+pub enum StateUI {
+    Update(Option<u8>, Option<FlipModes>),
+}
+
 #[derive(Lens)]
 struct Data {
     params: Arc<BitFlipperParams>,
-    buffer: [f32; 256],
-    bits: u32,
-}
-
-fn sine_wave() -> [f32; 256] {
-    let mut wave = [0.0; 256];
-    for (i, sample) in wave.iter_mut().enumerate() {
-        *sample = (i as f32 / 256.0 * TAU).sin();
-    }
-    wave
+    monitor_params: MonitorParams,
 }
 
 impl Model for Data {
     fn event(&mut self, _cx: &mut EventContext, event: &mut Event) {
-        event.map(|window_event, meta| match window_event {
-            DigitEvents::Flip(bit) => {
-                self.bits = self.params.bits.to_u32();
-                self.bits ^= 1 << bit;
-                self.buffer = sine_wave();
+        event.map(|event, meta| match event {
+            StateUI::Update(bit, mode) => {
+                let mut bits = self.params.bits.to_u32();
+                let mode = mode.unwrap_or_else(|| self.params.mode.value());
 
-                let mode = self.params.mode.value();
+                bit.map(|bit| bits ^= 1 << bit);
 
-                for s in self.buffer.iter_mut() {
-                    *s = mode.transform(*s, self.bits);
-                }
-
+                self.monitor_params = MonitorParams::new(bits, mode);
                 meta.consume();
             }
         });
@@ -62,17 +50,18 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 
 pub(crate) fn create(
     params: Arc<BitFlipperParams>,
-
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         assets::register_noto_sans_light(cx);
         assets::register_noto_sans_thin(cx);
 
+        let bits_state = params.bits.to_u32();
+        let mode_state = params.mode.value();
+
         Data {
             params: params.clone(),
-            buffer: sine_wave(),
-            bits: params.bits.to_u32(),
+            monitor_params: MonitorParams::new(bits_state, mode_state),
         }
         .build(cx);
 
@@ -87,17 +76,17 @@ pub(crate) fn create(
                 .child_right(Stretch(1.0));
 
             VStack::new(cx, |cx| {
-                Binding::new(cx, Data::bits, |cx, bits| {
-                    let bits = bits.get(cx);
+                VStack::new(cx, |cx| {
+                    Binding::new(cx, Data::monitor_params, |cx, monitor| {
+                        let bits = monitor.get(cx).bits;
 
-                    VStack::new(cx, |cx| {
                         Label::new(cx, &format!("u32: {}", bits));
                         Label::new(cx, &format!("f32: {}", f32::from_bits(bits)));
-                    })
-                    .height(Pixels(48.0))
-                    .child_space(Pixels(0.0))
-                    .color(Color::white());
-                });
+                    });
+                })
+                .height(Pixels(48.0))
+                .child_space(Pixels(0.0))
+                .color(Color::white());
 
                 HStack::new(cx, |cx| {
                     Digit::new(cx, 31, BLUE.into(), Data::params, |p| &p.bits.mask_bit_32);
@@ -161,11 +150,13 @@ pub(crate) fn create(
             VStack::new(cx, |cx| {
                 Mode::new(cx, Data::params, |p| &p.mode);
 
-                VStack::new(cx, |cx| Monitor::new(cx, Data::buffer))
-                    .child_space(Pixels(0.0))
-                    .background_color(Color::from("#202020"))
-                    .width(Pixels(128.0))
-                    .height(Pixels(128.0));
+                VStack::new(cx, |cx| {
+                    Monitor::new(cx, Data::monitor_params);
+                })
+                .child_space(Pixels(0.0))
+                .background_color(Color::from("#202020"))
+                .width(Pixels(128.0))
+                .height(Pixels(128.0));
             })
             .height(Pixels(192.0))
             .child_left(Stretch(1.0))
@@ -175,7 +166,5 @@ pub(crate) fn create(
         .child_space(Pixels(0.0))
         .background_color(Color::from("#222"))
         .color(Color::from("#eee"));
-
-        ResizeHandle::new(cx);
     })
 }

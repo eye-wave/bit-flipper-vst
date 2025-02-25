@@ -1,14 +1,12 @@
 use nih_plug::params::Param;
 use nih_plug_vizia::{vizia::prelude::*, widgets::param_base::ParamWidgetBase};
 
+use super::StateUI;
+
 #[derive(Lens)]
 pub struct Digit {
     param_base: ParamWidgetBase,
     bit: u8,
-}
-
-pub enum DigitEvents {
-    Flip(u8),
 }
 
 impl Digit {
@@ -74,14 +72,13 @@ impl View for Digit {
     }
 
     fn event(&mut self, cx: &mut EventContext, event: &mut Event) {
-        event.map(|window_event, meta| match window_event {
+        event.map(|window_event, _meta| match window_event {
             WindowEvent::MouseDown(MouseButton::Left)
             | WindowEvent::MouseDoubleClick(MouseButton::Left)
             | WindowEvent::MouseTripleClick(MouseButton::Left) => {
                 self.toggle_value(cx);
 
-                cx.emit(DigitEvents::Flip(self.bit));
-                meta.consume();
+                cx.emit(StateUI::Update(Some(self.bit), None));
             }
             _ => {}
         })

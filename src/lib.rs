@@ -1,10 +1,10 @@
-use bits::BitParams;
+use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
 use std::sync::Arc;
 
-mod bits;
 mod editor;
+pub mod model;
 
 /// This is mostly identical to the gain example, minus some fluff, and with a GUI.
 pub struct BitFlipper {
@@ -19,32 +19,10 @@ struct BitFlipperParams {
     editor_state: Arc<ViziaState>,
 
     #[nested(group = "bits")]
-    pub bits: bits::BitParams,
+    pub bits: BitParams,
 
     #[id = "mode"]
     pub mode: EnumParam<FlipModes>,
-}
-
-#[derive(Enum, Debug, PartialEq, Clone, Copy)]
-pub enum FlipModes {
-    And,
-    Or,
-    Not,
-    Xor,
-}
-
-impl FlipModes {
-    pub fn transform(&self, sample: f32, mask: u32) -> f32 {
-        let bits = sample.to_bits();
-        let flipped = match self {
-            Self::And => bits & mask,
-            Self::Or => bits | mask,
-            Self::Not => !bits,
-            Self::Xor => bits ^ mask,
-        };
-
-        f32::from_bits(flipped).clamp(-1.0, 1.0)
-    }
 }
 
 impl Default for BitFlipper {
@@ -59,7 +37,7 @@ impl Default for BitFlipperParams {
     fn default() -> Self {
         Self {
             editor_state: editor::default_state(),
-            mode: EnumParam::new("mode", FlipModes::Xor),
+            mode: EnumParam::new("mode", FlipModes::default()),
             bits: BitParams::default(),
         }
     }

@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "bit_flipper"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "nih_plug",
  "nih_plug_vizia",

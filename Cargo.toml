@@ -1,6 +1,6 @@
 [package]
 name = "bit_flipper"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
 license = "GPL-3.0-or-later"
