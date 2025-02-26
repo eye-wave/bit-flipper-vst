@@ -1,34 +1,39 @@
-# Bit flipper
+# Bit Flipper
 
-Very simple distortion plugin that does direct bit manipulation on audio samples, madewith [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Vizia](https://github.com/vizia/vizia).
+A very simple distortion plugin that performs direct bit manipulation on audio samples, made with [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Vizia](https://github.com/vizia/vizia).
+
 <p align="center"><img src="./assets/plugin-preview.webp"></p>
 
 ## Tested on:
-- Bitwig on Pop os 22.04 🐧
-- FL Studio on Windows 10 🪟
+
+- ⣴⠶⣦ Bitwig on Pop!\_OS 22.04 🐧
+- 🥕 FL Studio on Windows 10 🪟
 
 <hr>
 
 > [!NOTE]
-> I honestly thought it will sound more interesting 😭 but no.
+> I honestly thought it would sound more interesting 😭, but no.
 
-It operates in 4 modes.
-- **&** And
-- **!** Not (doesn't use the bit mask)
-- **|** Or
-- **^** Xor
+It operates in four modes:
+
+- **&** AND
+- **!** NOT (doesn't use the bit mask)
+- **|** OR
+- **^** XOR
 
 > [!WARNING]
-> Flipping the most significant bits can lead to very big DC offsets.
+> Flipping the most significant bits can lead to very large DC offsets.
 
-
-Can i be useful? I guess so? *Well maybe if you are remaking "On sight" by Kanye.*
-Flipping first fraction bits can add subtle noise to the sound.
+Can it be useful? I guess so? _Well, maybe if you're remaking "On Sight" by Kanye._
+Flipping the first fraction bits can add subtle noise to the sound.
 
 ### Download
-Open actions tab and click on the most recent one that hasn't failed. Then download one for your Operating system.
+
+Open the Actions tab and click on the most recent one that hasn't failed. Then, download the version for your operating system.
+
 > [!IMPORTANT]
-> You do need to have a github account to access those files.
+> You need a GitHub account to access these files.
 
 ### License
+
 GPL-3.0-or-later
