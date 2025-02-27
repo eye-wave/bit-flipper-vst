@@ -1,8 +1,10 @@
+use cyma::prelude::*;
 use digit::Digit;
 use mode::Mode;
 use monitor::{Monitor, MonitorParams};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::prelude::*;
+use nih_plug_vizia::widgets::{ParamButton, ParamSlider};
 use nih_plug_vizia::{create_vizia_editor, ViziaState, ViziaTheming};
 use std::sync::Arc;
 
@@ -45,16 +47,19 @@ impl Model for Data {
 
 // Makes sense to also define this here, makes it a bit easier to keep track of
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (544, 358))
+    ViziaState::new(|| (544, 480))
 }
 
 pub(crate) fn create(
+    bus: Arc<MonoBus>,
     params: Arc<BitFlipperParams>,
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         cx.add_font_mem(include_bytes!("../assets/font/joystix monospace.otf"));
         cx.add_stylesheet("*{font-family:Joystix}").unwrap();
+
+        bus.subscribe(cx);
 
         let bits_state = params.bits.to_u32();
         let mode_state = params.mode.value();
@@ -81,9 +86,22 @@ pub(crate) fn create(
                         Label::new(cx, &format!("f32: {}", f32::from_bits(bits))).font_size(10.0);
                     });
                 })
-                .child_left(Stretch(1.0))
-                .child_right(Stretch(1.0))
+                .height(Pixels(48.0))
                 .color(Color::white());
+
+                HStack::new(cx, |cx| {
+                    ParamButton::new(cx, Data::params, |p| &p.remove_dc_offset);
+                    VStack::new(cx, |cx| {
+                        Label::new(cx, "pre Gain").color(Color::white());
+                        ParamSlider::new(cx, Data::params, |p| &p.pre_gain).color(Color::white());
+                    });
+                })
+                .col_between(Stretch(1.0))
+                .child_space(Stretch(1.0))
+                .width(Stretch(1.0))
+                .left(Pixels(16.0))
+                .right(Pixels(16.0))
+                .height(Pixels(96.0));
 
                 HStack::new(cx, |cx| {
                     Digit::new(cx, 31, BLUE.into(), Data::params, |p| &p.bits.mask_bit_32);
@@ -147,7 +165,6 @@ pub(crate) fn create(
                 .height(Pixels(24.0))
                 .min_width(Pixels(512.0));
             })
-            .child_space(Pixels(0.0))
             .color(Color::black())
             .height(Pixels(80.0))
             .width(Pixels(512.0));
@@ -155,20 +172,26 @@ pub(crate) fn create(
             VStack::new(cx, |cx| {
                 Mode::new(cx, Data::params, |p| &p.mode);
 
-                VStack::new(cx, |cx| {
-                    Monitor::new(cx, Data::monitor_params);
-                })
-                .child_space(Pixels(0.0))
-                .background_color(Color::from("#202020"))
-                .width(Pixels(128.0))
-                .height(Pixels(128.0));
+                HStack::new(cx, |cx| {
+                    VStack::new(cx, |cx| {
+                        Monitor::new(cx, Data::monitor_params);
+                    })
+                    .width(Pixels(128.0))
+                    .height(Pixels(128.0))
+                    .background_color(Color::from("#202020"));
+
+                    Oscilloscope::new(cx, bus.clone(), 0.128, (-1.0, 1.0), ValueScaling::Linear)
+                        .color(Color::white())
+                        .width(Pixels(128.0))
+                        .height(Pixels(128.0));
+                });
             })
             .height(Pixels(192.0))
+            .top(Pixels(96.0))
             .child_left(Stretch(1.0))
             .child_right(Stretch(1.0));
         })
         .row_between(Pixels(0.0))
-        .child_space(Pixels(0.0))
         .background_color(Color::from("#222"))
         .color(Color::from("#eee"));
     })

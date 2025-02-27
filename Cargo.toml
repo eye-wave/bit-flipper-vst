@@ -1,6 +1,6 @@
 [package]
 name = "bit_flipper"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
 license = "GPL-3.0-or-later"
@@ -11,6 +11,7 @@ description = "Bit manipulation distortion plugin."
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
+cyma = { git = "https://github.com/exa04/cyma.git" }
 nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
     "assert_process_allocs",
     "standalone",

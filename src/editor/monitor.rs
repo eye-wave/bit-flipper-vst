@@ -27,7 +27,9 @@ where
     L: Lens<Target = MonitorParams>,
 {
     pub fn new(cx: &mut Context, params: L) -> Handle<Self> {
-        Self { params }.build(cx, |_cx| {})
+        Self { params }.build(cx, |cx| {
+            Element::new(cx);
+        })
     }
 
     fn sine_wave() -> [f32; 2048] {
