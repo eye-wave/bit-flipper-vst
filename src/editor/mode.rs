@@ -47,11 +47,17 @@ impl Mode {
                             ]
                             .map(|(mode, label)| {
                                 let this = helper_param.preview_normalized(mode);
-
                                 let is_selected = this == value.get(cx);
 
+                                let color = if is_selected {
+                                    Color::white()
+                                } else {
+                                    Color::from("#e2c551")
+                                };
+
                                 Label::new(cx, label)
-                                    .font_size(20.0)
+                                    .color(color)
+                                    .font_size(28.0)
                                     .font_weight(if is_selected {
                                         FontWeightKeyword::Black
                                     } else {
@@ -62,10 +68,10 @@ impl Mode {
                                     .text_align(TextAlign::Center)
                                     .border_width(Pixels(1.0))
                                     .border_color(Color::white())
-                                    .border_radius(Pixels(8.0))
                                     .on_mouse_up(move |cx, _| cx.emit(ModeEvents::Set(mode)));
                             });
                         })
+                        .child_space(Pixels(4.0))
                         .child_left(Stretch(1.0))
                         .child_right(Stretch(1.0))
                         .height(Pixels(36.0))

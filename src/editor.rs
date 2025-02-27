@@ -3,7 +3,7 @@ use mode::Mode;
 use monitor::{Monitor, MonitorParams};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::prelude::*;
-use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
+use nih_plug_vizia::{create_vizia_editor, ViziaState, ViziaTheming};
 use std::sync::Arc;
 
 use crate::model::FlipModes;
@@ -53,8 +53,8 @@ pub(crate) fn create(
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
-        assets::register_noto_sans_light(cx);
-        assets::register_noto_sans_thin(cx);
+        cx.add_font_mem(include_bytes!("../assets/font/joystix monospace.otf"));
+        cx.add_stylesheet("*{font-family:Joystix}").unwrap();
 
         let bits_state = params.bits.to_u32();
         let mode_state = params.mode.value();
@@ -67,25 +67,22 @@ pub(crate) fn create(
 
         VStack::new(cx, |cx| {
             Label::new(cx, "Bit flipper")
-                .font_family(vec![FamilyOwned::Name(String::from(assets::NOTO_SANS))])
-                .font_weight(FontWeightKeyword::Thin)
+                .width(Stretch(1.0))
+                .text_align(TextAlign::Center)
                 .font_size(30.0)
-                .child_top(Pixels(16.0))
-                .child_bottom(Pixels(0.0))
-                .child_left(Stretch(1.0))
-                .child_right(Stretch(1.0));
+                .child_top(Pixels(16.0));
 
             VStack::new(cx, |cx| {
                 VStack::new(cx, |cx| {
                     Binding::new(cx, Data::monitor_params, |cx, monitor| {
                         let bits = monitor.get(cx).bits;
 
-                        Label::new(cx, &format!("u32: {}", bits));
-                        Label::new(cx, &format!("f32: {}", f32::from_bits(bits)));
+                        Label::new(cx, &format!("u32: {}", bits)).font_size(12.0);
+                        Label::new(cx, &format!("f32: {}", f32::from_bits(bits))).font_size(10.0);
                     });
                 })
-                .height(Pixels(48.0))
-                .child_space(Pixels(0.0))
+                .child_left(Stretch(1.0))
+                .child_right(Stretch(1.0))
                 .color(Color::white());
 
                 HStack::new(cx, |cx| {
@@ -124,23 +121,31 @@ pub(crate) fn create(
                     Digit::new(cx, 1, RED.into(), Data::params, |p| &p.bits.mask_bit_2);
                     Digit::new(cx, 0, RED.into(), Data::params, |p| &p.bits.mask_bit_1);
                 })
+                .left(Pixels(16.0))
+                .right(Pixels(16.0))
                 .height(Pixels(16.0))
-                .width(Stretch(1.0));
+                .min_width(Pixels(512.0));
 
                 HStack::new(cx, |cx| {
                     Label::new(cx, "Sign")
-                        .background_color(Color::from(BLUE))
-                        .border_bottom_left_radius(Pixels(4.0));
+                        .width(Pixels(80.0))
+                        .text_align(TextAlign::Center)
+                        .background_color(BLUE);
+
                     Label::new(cx, "Exponent")
-                        .width(Stretch(1.0))
-                        .background_color(Color::from(GREEN));
+                        .width(Pixels(128.0))
+                        .text_align(TextAlign::Center)
+                        .background_color(GREEN);
+
                     Label::new(cx, "Fraction")
-                        .border_bottom_right_radius(Pixels(4.0))
-                        .width(Pixels(368.0))
-                        .background_color(Color::from(RED));
+                        .width(Stretch(1.0))
+                        .text_align(TextAlign::Center)
+                        .background_color(RED);
                 })
-                .height(Pixels(16.0))
-                .width(Pixels(512.0));
+                .left(Pixels(16.0))
+                .right(Pixels(16.0))
+                .height(Pixels(24.0))
+                .min_width(Pixels(512.0));
             })
             .child_space(Pixels(0.0))
             .color(Color::black())

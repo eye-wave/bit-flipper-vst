@@ -569,11 +569,10 @@ dependencies = [
 
 [[package]]
 name = "bit_flipper"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "nih_plug",
  "nih_plug_vizia",
- "random",
 ]
 
 [[package]]
@@ -2913,12 +2912,6 @@ checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core 0.5.1",
 ]
-
-[[package]]
-name = "random"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61c7093a82705b48f10d4b165c6482dbe9f58cd63a870d85537e857b2badbd88"
 
 [[package]]
 name = "rangemap"

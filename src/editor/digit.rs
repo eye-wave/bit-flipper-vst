@@ -41,18 +41,11 @@ impl Digit {
                             .color(Color::black())
                             .font_size(16.0)
                             .width(Pixels(16.0))
-                            .cursor(CursorIcon::Alias)
-                            .border_radius(Pixels(4.0))
                             .background_color(Color::from(color.as_str()));
                     },
                 )
             }),
         )
-        .checked(ParamWidgetBase::make_lens(
-            params,
-            params_to_param,
-            |param| param.modulated_normalized_value() >= 0.5,
-        ))
     }
 
     /// Set the parameter's normalized value to either 0.0 or 1.0 depending on its current value.
