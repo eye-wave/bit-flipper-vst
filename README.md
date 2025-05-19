@@ -1,5 +1,8 @@
 # Bit Flipper
 
+> [!WARNING]
+> Flipping the most significant bits can lead to very large DC offsets.
+
 A very simple distortion plugin that performs direct bit manipulation on audio samples, made with [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Vizia](https://github.com/vizia/vizia).
 
 <p align="center"><img src="./assets/plugin-preview.webp"></p>
@@ -20,9 +23,6 @@ It operates in four modes:
 - **!** NOT (doesn't use the bit mask)
 - **|** OR
 - **^** XOR
-
-> [!WARNING]
-> Flipping the most significant bits can lead to very large DC offsets.
 
 Can it be useful? I guess so? _Well, maybe if you're remaking "On Sight" by Kanye._
 Flipping the first fraction bits can add subtle noise to the sound.

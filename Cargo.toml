@@ -1,6 +1,8 @@
+cargo-features = ["profile-rustflags", "trim-paths"]
+
 [package]
 name = "bit_flipper"
-version = "0.1.4"
+version = "0.2.0"
 edition = "2021"
 authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
 license = "GPL-3.0-or-later"
@@ -11,12 +13,28 @@ description = "Bit manipulation distortion plugin."
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-cyma = { git = "https://github.com/exa04/cyma.git" }
 nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
     "assert_process_allocs",
     "standalone",
 ] }
-nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "9a0b42c09d712777b2edb4c5e0cb6baf21e988f0", features = [
+    "opengl",
+] }
+raw-window-handle = "0.5"
+glow = "0.16"
+crossbeam = "0.8"
+atomic_float = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+image = { version = "0.25.6", default-features = false, features = ["png"] }
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = "z"
+panic = "abort"
+strip = true
+trim-paths = "all"
+rustflags = ["-Cdebuginfo=0", "-Zthreads=8"]
 
 [workspace]
 members = ["xtask"]

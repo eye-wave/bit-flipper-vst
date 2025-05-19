@@ -1,7 +1,6 @@
 use nih_plug::prelude::*;
-use nih_plug_vizia::vizia::prelude::*;
 
-#[derive(Enum, Debug, PartialEq, Clone, Copy, Data)]
+#[derive(Enum, Debug, PartialEq, Clone, Copy)]
 pub enum FlipModes {
     And,
     Or,

@@ -1,36 +1,21 @@
-use cyma::prelude::*;
-use dc_block::DCBlocker;
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
-use nih_plug_vizia::ViziaState;
 use std::sync::Arc;
 
-mod dc_block;
 mod editor;
 pub mod model;
 
-/// This is mostly identical to the gain example, minus some fluff, and with a GUI.
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,
-    dc_blocker: DCBlocker,
-    bus: Arc<MonoBus>,
 }
 
 #[derive(Params)]
 struct BitFlipperParams {
-    /// The editor state, saved together with the parameter state so the custom scaling can be
-    /// restored.
-    #[persist = "editor-state"]
-    editor_state: Arc<ViziaState>,
-
     #[nested(group = "bits")]
     pub bits: BitParams,
 
     #[id = "mode"]
     pub mode: EnumParam<FlipModes>,
-
-    #[id = "remove_dc_offset"]
-    pub remove_dc_offset: BoolParam,
 
     #[id = "pre_gain"]
     pub pre_gain: FloatParam,
@@ -39,9 +24,7 @@ struct BitFlipperParams {
 impl Default for BitFlipper {
     fn default() -> Self {
         Self {
-            bus: Arc::new(MonoBus::default()),
             params: Arc::new(BitFlipperParams::default()),
-            dc_blocker: DCBlocker::new(0.995),
         }
     }
 }
@@ -49,10 +32,8 @@ impl Default for BitFlipper {
 impl Default for BitFlipperParams {
     fn default() -> Self {
         Self {
-            editor_state: editor::default_state(),
             mode: EnumParam::new("mode", FlipModes::default()),
             bits: BitParams::default(),
-            remove_dc_offset: BoolParam::new("Remove DC", true),
             pre_gain: FloatParam::new(
                 "pre_gain",
                 util::db_to_gain(0.0),
@@ -98,22 +79,12 @@ impl Plugin for BitFlipper {
         self.params.clone()
     }
 
-    fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        editor::create(
-            self.bus.clone(),
-            self.params.clone(),
-            self.params.editor_state.clone(),
-        )
-    }
-
     fn initialize(
         &mut self,
         _audio_io_layout: &AudioIOLayout,
-        buffer_config: &BufferConfig,
+        _buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.bus.set_sample_rate(buffer_config.sample_rate);
-
         true
     }
 
@@ -127,20 +98,11 @@ impl Plugin for BitFlipper {
             let mask = self.params.bits.to_u32();
             let mode = self.params.mode.value();
             let gain = self.params.pre_gain.smoothed.next();
-            let remove_dc = self.params.remove_dc_offset.value();
 
             for sample in channel_samples {
                 *sample *= gain;
                 *sample = mode.transform(*sample, mask);
-
-                if remove_dc {
-                    *sample = self.dc_blocker.process(*sample)
-                }
             }
-        }
-
-        if self.params.editor_state.is_open() {
-            self.bus.send_buffer_summing(buffer);
         }
 
         ProcessStatus::Normal
