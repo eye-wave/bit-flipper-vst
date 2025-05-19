@@ -1,3 +1,4 @@
+use editor::{CustomWgpuEditorState, create_editor};
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
 use std::sync::Arc;
@@ -11,6 +12,11 @@ pub struct BitFlipper {
 
 #[derive(Params)]
 struct BitFlipperParams {
+    /// The editor state, saved together with the parameter state so the custom scaling can be
+    /// restored.
+    #[persist = "editor-state"]
+    editor_state: Arc<CustomWgpuEditorState>,
+
     #[nested(group = "bits")]
     pub bits: BitParams,
 
@@ -32,6 +38,7 @@ impl Default for BitFlipper {
 impl Default for BitFlipperParams {
     fn default() -> Self {
         Self {
+            editor_state: CustomWgpuEditorState::from_size((400, 300)),
             mode: EnumParam::new("mode", FlipModes::default()),
             bits: BitParams::default(),
             pre_gain: FloatParam::new(
@@ -86,6 +93,10 @@ impl Plugin for BitFlipper {
         _context: &mut impl InitContext<Self>,
     ) -> bool {
         true
+    }
+
+    fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
+        create_editor(&self.params)
     }
 
     fn process(
