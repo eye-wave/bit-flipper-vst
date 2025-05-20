@@ -38,7 +38,7 @@ impl Default for BitFlipper {
 impl Default for BitFlipperParams {
     fn default() -> Self {
         Self {
-            editor_state: CustomWgpuEditorState::from_size((400, 300)),
+            editor_state: CustomWgpuEditorState::from_size((600, 600)),
             mode: EnumParam::new("mode", FlipModes::default()),
             bits: BitParams::default(),
             pre_gain: FloatParam::new(
