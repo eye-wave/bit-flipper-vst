@@ -17,6 +17,7 @@ atomic_float = "0.1"
 baseview = { git = "https://github.com/RustAudio/baseview.git", rev = "9a0b42c09d712777b2edb4c5e0cb6baf21e988f0", features = [
     "opengl",
 ] }
+bytemuck = "1.23.0"
 crossbeam = "0.8"
 glow = "0.16"
 image = { version = "0.25.6", default-features = false, features = ["png"] }

@@ -1,21 +1,18 @@
-use baseview::{WindowEvent, WindowHandle, WindowOpenOptions, WindowScalePolicy};
+use crate::BitFlipperParams;
+use baseview::{
+    MouseButton, MouseEvent, WindowEvent, WindowHandle, WindowOpenOptions, WindowScalePolicy,
+};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::*;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use serde::{Deserialize, Serialize};
-use std::{
-    borrow::Cow,
-    num::NonZeroIsize,
-    ptr::NonNull,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-};
+use std::borrow::Cow;
+use std::num::NonZeroIsize;
+use std::ptr::NonNull;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::SurfaceTargetUnsafe;
-
-use crate::BitFlipperParams;
 
 pub struct CustomWgpuWindow {
     gui_context: Arc<dyn GuiContext>,
@@ -27,6 +24,12 @@ pub struct CustomWgpuWindow {
     surface_config: wgpu::SurfaceConfiguration,
 
     params: Arc<BitFlipperParams>,
+
+    mouse_pos: (f64, f64),
+    mouse_down: bool,
+
+    mouse_buffer: wgpu::Buffer,
+    mouse_bind_group: wgpu::BindGroup,
 }
 
 impl CustomWgpuWindow {
@@ -69,6 +72,7 @@ impl CustomWgpuWindow {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
+                // required_features: wgpu::Features::POLYGON_MODE_LINE,
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                     .using_resolution(adapter.limits()),
@@ -79,11 +83,20 @@ impl CustomWgpuWindow {
             .expect("Failed to create device");
 
         const SHADER: &str = "
-            const VERTS = array(
-                vec2<f32>(0.5, 1.0),
-                vec2<f32>(0.0, 0.0),
-                vec2<f32>(1.0, 0.0)
+
+            @group(0) @binding(0)
+            var<uniform> pressed: u32;
+
+            const VERTS = array<vec2<f32>, 6>(
+                vec2<f32>(-1.0, -1.0), // Triangle 1
+                vec2<f32>(1.0, -1.0),
+                vec2<f32>(-1.0, 1.0),
+
+                vec2<f32>(-1.0, 1.0), // Triangle 2
+                vec2<f32>(1.0, -1.0),
+                vec2<f32>(1.0, 1.0),
             );
+
 
             struct VertexOutput {
                 @builtin(position) clip_position: vec4<f32>,
@@ -91,29 +104,64 @@ impl CustomWgpuWindow {
             };
 
             @vertex
-            fn vs_main(
-                @builtin(vertex_index) in_vertex_index: u32,
-            ) -> VertexOutput {
+            fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOutput {
                 var out: VertexOutput;
+                
                 out.position = VERTS[in_vertex_index];
-                out.clip_position = vec4<f32>(out.position - 0.5, 0.0, 1.0);
+                out.clip_position = vec4<f32>(out.position, 0.0, 1.0);
                 return out;
             }
 
             @fragment
             fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-                return vec4<f32>(in.position, 0.5, 1.0);
-            }
-            ";
+                var color = vec4<f32>(in.position.x,in.position.y, 0.5, 1.0);
+
+                if ( pressed != 0u ) {
+                    color = vec4<f32>(1.0,0.0,0.0,color.a);
+                }
+
+                return color;
+            }";
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER)),
         });
 
+        let mouse_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Mouse Buffer"),
+            size: std::mem::size_of::<u32>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let mouse_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Mouse Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let mouse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Mouse Bind Group"),
+            layout: &mouse_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: mouse_buffer.as_entire_binding(),
+            }],
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&mouse_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -135,7 +183,10 @@ impl CustomWgpuWindow {
                 compilation_options: Default::default(),
                 targets: &[Some(swapchain_format.into())],
             }),
-            primitive: wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState {
+                // polygon_mode: wgpu::PolygonMode::Line,
+                ..Default::default()
+            },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
@@ -153,6 +204,10 @@ impl CustomWgpuWindow {
             surface,
             surface_config,
             params,
+            mouse_pos: (0.0, 0.0),
+            mouse_down: false,
+            mouse_bind_group,
+            mouse_buffer,
         }
     }
 }
@@ -189,10 +244,24 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             });
 
             rpass.set_pipeline(&self.pipeline);
-            rpass.draw(0..3, 0..1);
+
+            rpass.set_bind_group(0, &self.mouse_bind_group, &[]);
+            rpass.draw(0..6, 0..1);
         }
 
+        let mouse_down = {
+            let (x, y) = self.mouse_pos;
+            if self.mouse_down && x > 100.0 && y > 100.0 {
+                1
+            } else {
+                0
+            }
+        };
+
+        self.queue
+            .write_buffer(&self.mouse_buffer, 0, bytemuck::cast_slice(&[mouse_down]));
         self.queue.submit(Some(encoder.finish()));
+
         frame.present();
     }
 
@@ -204,16 +273,34 @@ impl baseview::WindowHandler for CustomWgpuWindow {
         // Use this to set parameter values.
         let _param_setter = ParamSetter::new(self.gui_context.as_ref());
 
-        if let baseview::Event::Window(WindowEvent::Resized(window_info)) = &event {
-            self.params.editor_state.size.store((
-                window_info.logical_size().width.round() as u32,
-                window_info.logical_size().height.round() as u32,
-            ));
+        match &event {
+            baseview::Event::Mouse(event) => match event {
+                MouseEvent::ButtonPressed {
+                    button: MouseButton::Left,
+                    modifiers: _,
+                } => self.mouse_down = true,
+                MouseEvent::ButtonReleased {
+                    button: MouseButton::Left,
+                    modifiers: _,
+                } => self.mouse_down = false,
+                MouseEvent::CursorMoved {
+                    position,
+                    modifiers: _,
+                } => self.mouse_pos = (position.x, position.y),
+                _ => {}
+            },
+            baseview::Event::Window(WindowEvent::Resized(window_info)) => {
+                self.params.editor_state.size.store((
+                    window_info.logical_size().width.round() as u32,
+                    window_info.logical_size().height.round() as u32,
+                ));
 
-            self.surface_config.width = window_info.physical_size().width;
-            self.surface_config.height = window_info.physical_size().height;
+                self.surface_config.width = window_info.physical_size().width;
+                self.surface_config.height = window_info.physical_size().height;
 
-            self.surface.configure(&self.device, &self.surface_config);
+                self.surface.configure(&self.device, &self.surface_config);
+            }
+            _ => {}
         }
 
         baseview::EventStatus::Captured
