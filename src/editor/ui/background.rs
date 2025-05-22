@@ -1,8 +1,9 @@
 use super::{
     UiElement,
     pipeline::{SharedPipeline, create_pipeline},
+    texture::create_texture,
 };
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 pub struct BackgroundPipeline {
     pipeline: wgpu::RenderPipeline,
@@ -19,57 +20,6 @@ impl BackgroundPipeline {
         queue: &wgpu::Queue,
         config: &wgpu::SurfaceConfiguration,
     ) -> Self {
-        let img = image::load_from_memory(include_bytes!("../../../assets/textures/__base__.png"))
-            .expect("Failed to load image")
-            .to_rgba8();
-        let (width, height) = img.dimensions();
-
-        let size = wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        };
-
-        // Create texture
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Background texture"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        // Upload to GPU
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &img,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * width),
-                rows_per_image: Some(height),
-            },
-            size,
-        );
-
-        // View and Sampler
-        let view = texture.create_view(&Default::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Background Sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
         // Shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Background Shader"),
@@ -98,7 +48,13 @@ impl BackgroundPipeline {
             ],
         });
 
-        let pipeline = create_pipeline(device, config.format, &[&bind_group_layout], &shader);
+        let pipeline = create_pipeline(device, config.format, &[&bind_group_layout], &[], &shader);
+
+        let img = image::load_from_memory(include_bytes!("../../../assets/textures/__base__.png"))
+            .unwrap()
+            .to_rgba8();
+
+        let (view, sampler) = create_texture(device, img, queue);
 
         // Bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -132,19 +88,19 @@ impl Background {
 }
 
 impl SharedPipeline for BackgroundPipeline {
-    fn bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
-    }
-
     fn pipeline(&self) -> &wgpu::RenderPipeline {
         &self.pipeline
     }
 }
 
 impl UiElement for Background {
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, _queue: &wgpu::Queue) {
         render_pass.set_pipeline(self.shared_pipeline.pipeline());
-        render_pass.set_bind_group(0, self.shared_pipeline.bind_group(), &[]);
+        render_pass.set_bind_group(0, &self.shared_pipeline.bind_group, &[]);
         render_pass.draw(0..6, 0..1);
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }

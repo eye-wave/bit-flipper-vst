@@ -1,12 +1,12 @@
 pub trait SharedPipeline {
     fn pipeline(&self) -> &wgpu::RenderPipeline;
-    fn bind_group(&self) -> &wgpu::BindGroup;
 }
 
 pub fn create_pipeline(
     device: &wgpu::Device,
     tex_format: wgpu::TextureFormat,
     bind_group_layouts: &[&wgpu::BindGroupLayout],
+    vertex_layouts: &[wgpu::VertexBufferLayout],
     shader: &wgpu::ShaderModule,
 ) -> wgpu::RenderPipeline {
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -21,7 +21,7 @@ pub fn create_pipeline(
         vertex: wgpu::VertexState {
             module: shader,
             entry_point: Some("vs_main"),
-            buffers: &[],
+            buffers: vertex_layouts,
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {

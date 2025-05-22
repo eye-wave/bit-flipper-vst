@@ -8,10 +8,18 @@ use std::num::NonZeroIsize;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use ui::{Background, BackgroundPipeline, UiElement};
+use ui::{
+    Background, BackgroundPipeline, Button, ButtonPipeline, UiBox, UiElement, create_editor_buttons,
+};
 use wgpu::SurfaceTargetUnsafe;
 
 mod ui;
+
+#[derive(Debug, Default)]
+pub struct EventStore {
+    mouse_pos: (u16, u16),
+    mouse_down: bool,
+}
 
 pub struct CustomWgpuWindow {
     gui_context: Arc<dyn GuiContext>,
@@ -21,11 +29,11 @@ pub struct CustomWgpuWindow {
     surface: wgpu::Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
 
-    ui_elements: Vec<Box<dyn UiElement>>,
+    scene_elements: Vec<Box<dyn UiElement>>,
+
     params: Arc<BitFlipperParams>,
 
-    mouse_pos: (f64, f64),
-    mouse_down: bool,
+    event_store: EventStore,
 }
 
 impl CustomWgpuWindow {
@@ -84,7 +92,16 @@ impl CustomWgpuWindow {
         let bg_pipeline = Arc::new(BackgroundPipeline::new(&device, &queue, &surface_config));
         let background = Background::new(bg_pipeline.clone());
 
-        let ui_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
+        let btn_pipeline = Arc::new(ButtonPipeline::new(&device, &surface_config));
+
+        let mut scene_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
+
+        let buttons = create_editor_buttons(btn_pipeline, &device, &queue);
+        scene_elements.extend(
+            buttons
+                .into_iter()
+                .map(|b| Box::new(b) as Box<dyn UiElement>),
+        );
 
         Self {
             gui_context,
@@ -93,17 +110,14 @@ impl CustomWgpuWindow {
             surface,
             surface_config,
             params,
-            ui_elements,
-            mouse_pos: (0.0, 0.0),
-            mouse_down: false,
+            scene_elements,
+            event_store: EventStore::default(),
         }
     }
 }
 
 impl baseview::WindowHandler for CustomWgpuWindow {
     fn on_frame(&mut self, _window: &mut baseview::Window) {
-        // Do rendering here.
-
         let frame = self
             .surface
             .get_current_texture()
@@ -131,8 +145,8 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 occlusion_query_set: None,
             });
 
-            for element in &self.ui_elements {
-                element.render(&mut rpass);
+            for element in &self.scene_elements {
+                element.render(&mut rpass, &self.queue);
             }
         }
 
@@ -154,15 +168,29 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 baseview::MouseEvent::ButtonPressed {
                     button: baseview::MouseButton::Left,
                     modifiers: _,
-                } => self.mouse_down = true,
+                } => {
+                    self.event_store.mouse_down = true;
+
+                    for el in self.scene_elements.iter_mut() {
+                        if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                            let mouse_pos = self.event_store.mouse_pos;
+
+                            if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
+                                el.on_click();
+                            }
+                        }
+                    }
+                }
                 baseview::MouseEvent::ButtonReleased {
                     button: baseview::MouseButton::Left,
                     modifiers: _,
-                } => self.mouse_down = false,
+                } => self.event_store.mouse_down = false,
                 baseview::MouseEvent::CursorMoved {
                     position,
                     modifiers: _,
-                } => self.mouse_pos = (position.x, position.y),
+                } => {
+                    self.event_store.mouse_pos = (position.x as u16 / 3, position.y as u16 / 3);
+                }
                 _ => {}
             },
             baseview::Event::Window(baseview::WindowEvent::Resized(window_info)) => {
