@@ -4,28 +4,28 @@ use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::*;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::num::NonZeroIsize;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use ui::{Background, BackgroundPipeline, UiElement};
 use wgpu::SurfaceTargetUnsafe;
+
+mod ui;
 
 pub struct CustomWgpuWindow {
     gui_context: Arc<dyn GuiContext>,
 
     device: wgpu::Device,
     queue: wgpu::Queue,
-    pipeline: wgpu::RenderPipeline,
     surface: wgpu::Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
 
+    ui_elements: Vec<Box<dyn UiElement>>,
     params: Arc<BitFlipperParams>,
 
     mouse_pos: (f64, f64),
     mouse_down: bool,
-
-    tex_bind_group: wgpu::BindGroup,
 }
 
 impl CustomWgpuWindow {
@@ -78,181 +78,24 @@ impl CustomWgpuWindow {
             .await
             .expect("Failed to create device");
 
-        const SHADER: &str = "
-        @group(0) @binding(0)
-        var samp: sampler;
-        @group(0) @binding(1)
-        var tex: texture_2d<f32>;
-
-        const VERTS = array<vec2<f32>, 6>(
-            vec2(-1.0, -1.0),
-            vec2(1.0, -1.0),
-            vec2(-1.0, 1.0),
-            vec2(-1.0, 1.0),
-            vec2(1.0, -1.0),
-            vec2(1.0, 1.0),
-        );
-
-        struct VertexOut {
-            @builtin(position) position: vec4<f32>,
-            @location(0) uv: vec2<f32>,
-        };
-
-        @vertex
-        fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOut {
-            var out: VertexOut;
-            let pos = VERTS[vertex_index];
-            
-            out.position = vec4(pos, 0.0, 1.0);
-            out.uv = pos * 0.5 + vec2(0.5);
-
-            return out;
-        }
-
-        @fragment
-        fn fs_main(in: VertexOut) -> @location(0) vec4<f32> {
-            let uv = vec2(in.uv.x,1.0 - in.uv.y);
-            return textureSample(tex, samp, uv);
-        }";
-
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER)),
-        });
-
-        let img_data = include_bytes!("../assets/textures/__base__.png");
-        let img = image::load_from_memory(img_data).unwrap().to_rgba8();
-        let dimensions = img.dimensions();
-
-        let texture_size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: texture_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            label: Some("Texture"),
-            view_formats: &[],
-        });
-
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &img,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
-            },
-            texture_size,
-        );
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-            ],
-            label: Some("texture_bind_group_layout"),
-        });
-
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-            ],
-            label: Some("texture_bind_group"),
-        });
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let swapchain_capabilities = surface.get_capabilities(&adapter);
-        let swapchain_format = swapchain_capabilities.formats[0];
-
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                compilation_options: Default::default(),
-                targets: &[Some(swapchain_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState {
-                // polygon_mode: wgpu::PolygonMode::Line,
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            cache: None,
-        });
-
         let surface_config = surface.get_default_config(&adapter, width, height).unwrap();
         surface.configure(&device, &surface_config);
+
+        let bg_pipeline = Arc::new(BackgroundPipeline::new(&device, &queue, &surface_config));
+        let background = Background::new(bg_pipeline.clone());
+
+        let ui_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
 
         Self {
             gui_context,
             device,
             queue,
-            pipeline,
             surface,
             surface_config,
             params,
+            ui_elements,
             mouse_pos: (0.0, 0.0),
             mouse_down: false,
-            tex_bind_group: bind_group,
         }
     }
 }
@@ -288,9 +131,9 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 occlusion_query_set: None,
             });
 
-            rpass.set_pipeline(&self.pipeline);
-            rpass.set_bind_group(0, &self.tex_bind_group, &[]);
-            rpass.draw(0..6, 0..1);
+            for element in &self.ui_elements {
+                element.render(&mut rpass);
+            }
         }
 
         self.queue.submit(Some(encoder.finish()));

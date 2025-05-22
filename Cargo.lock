@@ -282,11 +282,13 @@ dependencies = [
  "crossbeam",
  "glow",
  "image",
+ "naga",
  "nih_plug",
  "pollster",
  "raw-window-handle 0.5.2",
  "raw-window-handle 0.6.2",
  "serde",
+ "walkdir",
  "wgpu",
 ]
 
