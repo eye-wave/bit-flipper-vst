@@ -1,18 +1,16 @@
 use crate::BitFlipperParams;
+use core::{CustomWgpuEditorHandle, ParentWindowHandleAdapter, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::*;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use serde::{Deserialize, Serialize};
-use std::num::NonZeroIsize;
-use std::ptr::NonNull;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use ui::{
-    Background, BackgroundPipeline, Button, ButtonPipeline, UiBox, UiElement, create_editor_buttons,
-};
+use ui::texture::TextureAtlas;
+use ui::{Background, BackgroundPipeline, Postprocess, UiElement};
 use wgpu::SurfaceTargetUnsafe;
 
+mod core;
 mod ui;
 
 #[derive(Debug, Default)]
@@ -29,10 +27,12 @@ pub struct CustomWgpuWindow {
     surface: wgpu::Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
 
+    postprocess: Postprocess,
+    grayscale_view: wgpu::TextureView,
+
     scene_elements: Vec<Box<dyn UiElement>>,
 
     params: Arc<BitFlipperParams>,
-
     event_store: EventStore,
 }
 
@@ -88,29 +88,51 @@ impl CustomWgpuWindow {
 
         let surface_config = surface.get_default_config(&adapter, width, height).unwrap();
         surface.configure(&device, &surface_config);
+        let tex_format = surface_config.format;
 
-        let bg_pipeline = Arc::new(BackgroundPipeline::new(&device, &queue, &surface_config));
+        let texture_atlas = Arc::new(TextureAtlas::new(&device, &queue));
+
+        let bg_pipeline = Arc::new(BackgroundPipeline::new(
+            &device,
+            tex_format,
+            texture_atlas.clone(),
+        ));
+
         let background = Background::new(bg_pipeline.clone());
+        let scene_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
 
-        let btn_pipeline = Arc::new(ButtonPipeline::new(&device, &surface_config));
+        let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Grayscale Render Target"),
+            size: wgpu::Extent3d {
+                width: 200,
+                height: 200,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: tex_format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
 
-        let mut scene_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
-
-        let buttons = create_editor_buttons(btn_pipeline, &device, &queue);
-        scene_elements.extend(
-            buttons
-                .into_iter()
-                .map(|b| Box::new(b) as Box<dyn UiElement>),
-        );
+        let grayscale_view = grayscale_texture.create_view(&Default::default());
+        let postprocess = Postprocess::new(&device, &queue, tex_format, &grayscale_view);
 
         Self {
             gui_context,
+            //
             device,
             queue,
             surface,
             surface_config,
-            params,
+            //
+            postprocess,
+            grayscale_view,
+            //
             scene_elements,
+            //
+            params,
             event_store: EventStore::default(),
         }
     }
@@ -129,11 +151,12 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
+        // --- First pass: render scene to offscreen grayscale texture ---
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
+                label: Some("Scene Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
+                    view: &self.grayscale_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -148,6 +171,26 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             for element in &self.scene_elements {
                 element.render(&mut rpass, &self.queue);
             }
+        }
+
+        // --- Second pass: postprocess to screen ---
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Postprocess Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            self.postprocess.render(&mut rpass, &self.queue);
         }
 
         self.queue.submit(Some(encoder.finish()));
@@ -171,15 +214,15 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 } => {
                     self.event_store.mouse_down = true;
 
-                    for el in self.scene_elements.iter_mut() {
-                        if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
-                            let mouse_pos = self.event_store.mouse_pos;
+                    // for el in self.scene_elements.iter_mut() {
+                    //     if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                    //         let mouse_pos = self.event_store.mouse_pos;
 
-                            if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
-                                el.on_click();
-                            }
-                        }
-                    }
+                    //         if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
+                    //             el.on_click();
+                    //         }
+                    //     }
+                    // }
                 }
                 baseview::MouseEvent::ButtonReleased {
                     button: baseview::MouseButton::Left,
@@ -328,121 +371,6 @@ impl Editor for CustomWgpuEditor {
 
     fn param_values_changed(&self) {
         // Same
-    }
-}
-
-/// The window handle used for [`CustomWgpuEditor`].
-struct CustomWgpuEditorHandle {
-    state: Arc<CustomWgpuEditorState>,
-    window: baseview::WindowHandle,
-}
-
-/// The window handle enum stored within 'WindowHandle' contains raw pointers. Is there a way around
-/// having this requirement?
-unsafe impl Send for CustomWgpuEditorHandle {}
-
-impl Drop for CustomWgpuEditorHandle {
-    fn drop(&mut self) {
-        self.state.open.store(false, Ordering::Release);
-        // XXX: This should automatically happen when the handle gets dropped, but apparently not
-        self.window.close();
-    }
-}
-
-/// This version of `baseview` uses a different version of `raw_window_handle than NIH-plug, so we
-/// need to adapt it ourselves.
-struct ParentWindowHandleAdapter(nih_plug::editor::ParentWindowHandle);
-
-unsafe impl HasRawWindowHandle for ParentWindowHandleAdapter {
-    fn raw_window_handle(&self) -> RawWindowHandle {
-        match self.0 {
-            ParentWindowHandle::X11Window(window) => {
-                let mut handle = raw_window_handle::XcbWindowHandle::empty();
-                handle.window = window;
-                RawWindowHandle::Xcb(handle)
-            }
-            ParentWindowHandle::AppKitNsView(ns_view) => {
-                let mut handle = raw_window_handle::AppKitWindowHandle::empty();
-                handle.ns_view = ns_view;
-                RawWindowHandle::AppKit(handle)
-            }
-            ParentWindowHandle::Win32Hwnd(hwnd) => {
-                let mut handle = raw_window_handle::Win32WindowHandle::empty();
-                handle.hwnd = hwnd;
-                RawWindowHandle::Win32(handle)
-            }
-        }
-    }
-}
-
-/// WGPU uses raw_window_handle v6, but baseview uses raw_window_handle v5, so manually convert it.
-fn baseview_window_to_surface_target(window: &baseview::Window<'_>) -> wgpu::SurfaceTargetUnsafe {
-    use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
-
-    let raw_display_handle = window.raw_display_handle();
-    let raw_window_handle = window.raw_window_handle();
-
-    wgpu::SurfaceTargetUnsafe::RawHandle {
-        raw_display_handle: match raw_display_handle {
-            raw_window_handle::RawDisplayHandle::AppKit(_) => {
-                raw_window_handle_06::RawDisplayHandle::AppKit(
-                    raw_window_handle_06::AppKitDisplayHandle::new(),
-                )
-            }
-            raw_window_handle::RawDisplayHandle::Xlib(handle) => {
-                raw_window_handle_06::RawDisplayHandle::Xlib(
-                    raw_window_handle_06::XlibDisplayHandle::new(
-                        NonNull::new(handle.display),
-                        handle.screen,
-                    ),
-                )
-            }
-            raw_window_handle::RawDisplayHandle::Xcb(handle) => {
-                raw_window_handle_06::RawDisplayHandle::Xcb(
-                    raw_window_handle_06::XcbDisplayHandle::new(
-                        NonNull::new(handle.connection),
-                        handle.screen,
-                    ),
-                )
-            }
-            raw_window_handle::RawDisplayHandle::Windows(_) => {
-                raw_window_handle_06::RawDisplayHandle::Windows(
-                    raw_window_handle_06::WindowsDisplayHandle::new(),
-                )
-            }
-            _ => todo!(),
-        },
-        raw_window_handle: match raw_window_handle {
-            raw_window_handle::RawWindowHandle::AppKit(handle) => {
-                raw_window_handle_06::RawWindowHandle::AppKit(
-                    raw_window_handle_06::AppKitWindowHandle::new(
-                        NonNull::new(handle.ns_view).unwrap(),
-                    ),
-                )
-            }
-            raw_window_handle::RawWindowHandle::Xlib(handle) => {
-                raw_window_handle_06::RawWindowHandle::Xlib(
-                    raw_window_handle_06::XlibWindowHandle::new(handle.window),
-                )
-            }
-            raw_window_handle::RawWindowHandle::Xcb(handle) => {
-                raw_window_handle_06::RawWindowHandle::Xcb(
-                    raw_window_handle_06::XcbWindowHandle::new(
-                        NonZeroU32::new(handle.window).unwrap(),
-                    ),
-                )
-            }
-            raw_window_handle::RawWindowHandle::Win32(handle) => {
-                let mut raw_handle = raw_window_handle_06::Win32WindowHandle::new(
-                    NonZeroIsize::new(handle.hwnd as isize).unwrap(),
-                );
-
-                raw_handle.hinstance = NonZeroIsize::new(handle.hinstance as isize);
-
-                raw_window_handle_06::RawWindowHandle::Win32(raw_handle)
-            }
-            _ => todo!(),
-        },
     }
 }
 
