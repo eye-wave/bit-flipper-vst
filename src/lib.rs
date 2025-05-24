@@ -1,4 +1,4 @@
-use editor::{CustomWgpuEditorState, create_editor};
+use editor::{CustomWgpuEditorState, VIEW_WIDTH, create_editor};
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
 use std::sync::Arc;
@@ -37,8 +37,11 @@ impl Default for BitFlipper {
 
 impl Default for BitFlipperParams {
     fn default() -> Self {
+        let scale = 3;
+        let size = (VIEW_WIDTH as u32 * scale, VIEW_WIDTH as u32 * scale);
+
         Self {
-            editor_state: CustomWgpuEditorState::from_size((600, 600)),
+            editor_state: CustomWgpuEditorState::from_size(size),
             mode: EnumParam::new("mode", FlipModes::default()),
             bits: BitParams::default(),
             pre_gain: FloatParam::new(

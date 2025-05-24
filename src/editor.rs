@@ -7,8 +7,11 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ui::texture::TextureAtlas;
-use ui::{Background, BackgroundPipeline, Postprocess, UiElement};
+use ui::{Background, BackgroundPipeline, Postprocess, StaticBox, StaticBoxPipeline, UiElement};
 use wgpu::SurfaceTargetUnsafe;
+
+pub const VIEW_WIDTH: u16 = 200;
+pub const VIEW_HEIGHT: u16 = 200;
 
 mod core;
 mod ui;
@@ -99,13 +102,34 @@ impl CustomWgpuWindow {
         ));
 
         let background = Background::new(bg_pipeline.clone());
-        let scene_elements: Vec<Box<dyn UiElement>> = vec![Box::new(background)];
+
+        let static_box_pipeline = Arc::new(StaticBoxPipeline::new(
+            &device,
+            tex_format,
+            texture_atlas.clone(),
+        ));
+
+        let scene_elements: Vec<Box<dyn UiElement>> = vec![
+            Box::new(background),
+            Box::new(
+                StaticBox::new(&device, "gui_main", (46, 0), static_box_pipeline.clone()).unwrap(),
+            ),
+            Box::new(
+                StaticBox::new(
+                    &device,
+                    "gui_monitors",
+                    (18, 154),
+                    static_box_pipeline.clone(),
+                )
+                .unwrap(),
+            ),
+        ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Grayscale Render Target"),
             size: wgpu::Extent3d {
-                width: 200,
-                height: 200,
+                width: VIEW_WIDTH as u32,
+                height: VIEW_HEIGHT as u32,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,

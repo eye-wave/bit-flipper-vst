@@ -28,7 +28,11 @@ pub fn create_pipeline(
             module: shader,
             entry_point: Some("fs_main"),
             compilation_options: Default::default(),
-            targets: &[Some(tex_format.into())],
+            targets: &[Some(wgpu::ColorTargetState {
+                format: tex_format,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
         }),
         primitive: wgpu::PrimitiveState {
             ..Default::default()

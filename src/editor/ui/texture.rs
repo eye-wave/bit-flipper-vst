@@ -3,11 +3,15 @@ use std::collections::HashMap;
 pub struct TextureAtlas {
     pub bind_group: wgpu::BindGroup,
     pub layout: wgpu::BindGroupLayout,
+    pub bounds_map: HashMap<&'static str, [u16; 4]>,
     tex_size: (u32, u32),
-    bounds_map: HashMap<&'static str, [u16; 4]>,
 }
 
-const UV_MAP: &[(&str, [u16; 4])] = &[("background", [100, 50, 200, 150])];
+const UV_MAP: &[(&str, [u16; 4])] = &[
+    ("background", [100, 50, 200, 150]),
+    ("gui_main", [0, 0, 90, 151]),
+    ("gui_monitors", [18, 154, 182, 199]),
+];
 
 impl TextureAtlas {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
@@ -136,6 +140,17 @@ impl TextureAtlas {
             ];
 
             return Some(bounds);
+        }
+
+        None
+    }
+
+    pub fn get_size(&self, name: &str) -> Option<(u16, u16)> {
+        if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
+            let width = x2 - x1;
+            let height = y2 - y1;
+
+            return Some((width, height));
         }
 
         None
