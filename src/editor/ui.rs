@@ -1,6 +1,8 @@
 use super::{VIEW_HEIGHT, VIEW_WIDTH};
+use std::any::Any;
 
 mod background;
+mod button;
 mod postprocess;
 mod static_box;
 
@@ -8,11 +10,13 @@ pub(super) mod pipeline;
 pub(super) mod texture;
 
 pub use background::*;
+pub use button::*;
 pub use postprocess::*;
 pub use static_box::*;
 
 pub trait UiElement {
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue);
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 pub trait UiBox {
@@ -49,5 +53,14 @@ impl UiBox for [u16; 4] {
 
     fn position(&self) -> (u16, u16) {
         (self[0], self[1])
+    }
+}
+
+pub trait UiInteractive: UiElement + UiBox {
+    fn is_mouse_over(&self, mouse_pos: (u16, u16)) -> bool {
+        let (x, y) = self.position();
+        let (mouse_x, mouse_y) = mouse_pos;
+
+        mouse_x >= x && mouse_x < x + self.width() && mouse_y >= y && mouse_y < y + self.height()
     }
 }

@@ -150,6 +150,10 @@ impl SharedPipeline for BackgroundPipeline {
 }
 
 impl UiElement for Background {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue) {
         let time = self.shared_pipeline.start_time.elapsed().as_secs_f32();
         let updated = BackgroundUniforms {

@@ -28,7 +28,7 @@ fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
 
 @fragment
 fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-  let value = textureSample(grayscale_tex, tex_sampler, uv).r * 0.875 + 0.125;
+  let value = textureSample(grayscale_tex, tex_sampler, uv).r;
 
   return textureSample(palette_tex, tex_sampler, vec2<f32>(value, 0.0));
 }

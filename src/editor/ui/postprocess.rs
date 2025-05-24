@@ -25,7 +25,7 @@ impl Postprocess {
         let palette_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Palette Texture"),
             size: wgpu::Extent3d {
-                width: 8,
+                width: 7,
                 height: 1,
                 depth_or_array_layers: 1,
             },
@@ -54,7 +54,7 @@ impl Postprocess {
                 rows_per_image: Some(1),
             },
             wgpu::Extent3d {
-                width: 8,
+                width: 7,
                 height: 1,
                 depth_or_array_layers: 1,
             },
@@ -121,6 +121,10 @@ impl Postprocess {
 }
 
 impl UiElement for Postprocess {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, _queue: &wgpu::Queue) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);

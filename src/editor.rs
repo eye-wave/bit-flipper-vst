@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use ui::texture::TextureAtlas;
-use ui::{Background, BackgroundPipeline, Postprocess, StaticBox, StaticBoxPipeline, UiElement};
+use ui::*;
 use wgpu::SurfaceTargetUnsafe;
 
 pub const VIEW_WIDTH: u16 = 200;
@@ -103,7 +103,7 @@ impl CustomWgpuWindow {
 
         let background = Background::new(bg_pipeline.clone());
 
-        let static_box_pipeline = Arc::new(StaticBoxPipeline::new(
+        let st_pipe = Arc::new(StaticBoxPipeline::new(
             &device,
             tex_format,
             texture_atlas.clone(),
@@ -111,18 +111,12 @@ impl CustomWgpuWindow {
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(background),
-            Box::new(
-                StaticBox::new(&device, "gui_main", (46, 0), static_box_pipeline.clone()).unwrap(),
-            ),
-            Box::new(
-                StaticBox::new(
-                    &device,
-                    "gui_monitors",
-                    (18, 154),
-                    static_box_pipeline.clone(),
-                )
-                .unwrap(),
-            ),
+            Box::new(StaticBox::new(&device, "gui_main", (46, 0), st_pipe.clone()).unwrap()),
+            Box::new(StaticBox::new(&device, "gui_monitors", (18, 154), st_pipe.clone()).unwrap()),
+            Box::new(Button::new(&device, "btn_xor", (46, 51), st_pipe.clone()).unwrap()),
+            Box::new(Button::new(&device, "btn_or", (46, 68), st_pipe.clone()).unwrap()),
+            Box::new(Button::new(&device, "btn_and", (46, 85), st_pipe.clone()).unwrap()),
+            Box::new(Button::new(&device, "btn_not", (46, 102), st_pipe.clone()).unwrap()),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -238,15 +232,15 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 } => {
                     self.event_store.mouse_down = true;
 
-                    // for el in self.scene_elements.iter_mut() {
-                    //     if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
-                    //         let mouse_pos = self.event_store.mouse_pos;
+                    for el in self.scene_elements.iter_mut() {
+                        if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                            let mouse_pos = self.event_store.mouse_pos;
 
-                    //         if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
-                    //             el.on_click();
-                    //         }
-                    //     }
-                    // }
+                            if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
+                                el.onclick();
+                            }
+                        }
+                    }
                 }
                 baseview::MouseEvent::ButtonReleased {
                     button: baseview::MouseButton::Left,

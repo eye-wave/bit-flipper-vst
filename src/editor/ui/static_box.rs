@@ -5,8 +5,8 @@ use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 pub struct StaticBoxPipeline {
-    pipeline: wgpu::RenderPipeline,
-    tex_atlas: Arc<TextureAtlas>,
+    pub(super) pipeline: wgpu::RenderPipeline,
+    pub(super) tex_atlas: Arc<TextureAtlas>,
 }
 
 pub struct StaticBox {
@@ -111,6 +111,10 @@ impl StaticBox {
 }
 
 impl UiElement for StaticBox {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, _queue: &wgpu::Queue) {
         render_pass.set_pipeline(self.shared_pipeline.pipeline());
 
