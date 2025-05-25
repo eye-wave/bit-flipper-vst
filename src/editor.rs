@@ -1,5 +1,5 @@
-use crate::BitFlipperParams;
 use crate::model::FlipModes;
+use crate::{BitFlipperParams, UI_SCALE};
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -19,7 +19,9 @@ mod ui;
 
 #[derive(Debug, Default)]
 pub struct EventStore {
-    mouse_pos: (u16, u16),
+    mouse_pos: (i16, i16),
+    drag_start: (i16, i16),
+    dragging_slider: bool,
     mouse_down: bool,
 }
 
@@ -109,6 +111,11 @@ impl CustomWgpuWindow {
         ));
 
         let monitor_pipeline = Arc::new(SharedMonitorPipeline::new(&device, tex_format));
+        let slide_pipe = Arc::new(SliderPipeline::new(
+            &device,
+            tex_format,
+            texture_atlas.clone(),
+        ));
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(Background::new(bg_pipeline.clone())),
@@ -123,6 +130,7 @@ impl CustomWgpuWindow {
             Box::new(Monitor::new(&device, (20, 155), monitor_pipeline.clone())),
             Box::new(Monitor::new(&device, (105, 155), monitor_pipeline.clone())),
             Box::new(DigitCluster::new(&device, pipe.clone())),
+            Box::new(Slider::new(&device, (74, 142), slide_pipe.clone())),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -240,15 +248,17 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                     button: baseview::MouseButton::Left,
                     modifiers: _,
                 } => {
+                    self.event_store.dragging_slider = false;
                     self.event_store.mouse_down = true;
+                    self.event_store.drag_start = self.event_store.mouse_pos;
 
                     for el in self.scene_elements.iter_mut() {
-                        if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                        if let Some(btn) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
                             let mouse_pos = self.event_store.mouse_pos;
 
-                            if el.is_mouse_over(mouse_pos) {
+                            if btn.is_mouse_over(mouse_pos) {
                                 let setter = ParamSetter::new(&*self.gui_context);
-                                let norm = self.params.mode.preview_normalized(el.get_state());
+                                let norm = self.params.mode.preview_normalized(btn.get_state());
 
                                 setter.begin_set_parameter(&self.params.mode);
                                 setter.set_parameter_normalized(&self.params.mode, norm);
@@ -275,6 +285,14 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                                 }
                             }
                         }
+
+                        if let Some(slider) = el.as_mut().as_any_mut().downcast_mut::<Slider>() {
+                            if slider.is_mouse_over(self.event_store.mouse_pos) {
+                                self.event_store.dragging_slider = true
+                            }
+
+                            continue;
+                        }
                     }
                 }
                 baseview::MouseEvent::ButtonReleased {
@@ -285,7 +303,29 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                     position,
                     modifiers: _,
                 } => {
-                    self.event_store.mouse_pos = (position.x as u16 / 3, position.y as u16 / 3);
+                    self.event_store.mouse_pos = (
+                        position.x as i16 / UI_SCALE as i16,
+                        position.y as i16 / UI_SCALE as i16,
+                    );
+
+                    if self.event_store.dragging_slider && self.event_store.mouse_down {
+                        let delta = self.event_store.drag_start.0 - self.event_store.mouse_pos.0;
+                        let delta = delta as f32 / 59.0;
+
+                        self.event_store.drag_start = self.event_store.mouse_pos;
+
+                        let setter = ParamSetter::new(&*self.gui_context);
+
+                        let param = &self.params.pre_gain;
+                        let value = param.value();
+                        let norm = param.preview_normalized(value);
+
+                        let norm = (norm - delta * 2.0).clamp(0.0, 1.0);
+
+                        setter.begin_set_parameter(param);
+                        setter.set_parameter_normalized(param, norm);
+                        setter.end_set_parameter(param);
+                    }
                 }
                 _ => {}
             },

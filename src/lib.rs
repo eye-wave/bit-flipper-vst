@@ -4,11 +4,13 @@ use nih_plug::prelude::*;
 use std::sync::Arc;
 
 mod editor;
-pub mod model;
+pub(crate) mod model;
 
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,
 }
+
+pub(crate) const UI_SCALE: usize = 3;
 
 #[derive(Params)]
 struct BitFlipperParams {
@@ -37,8 +39,10 @@ impl Default for BitFlipper {
 
 impl Default for BitFlipperParams {
     fn default() -> Self {
-        let scale = 3;
-        let size = (VIEW_WIDTH as u32 * scale, VIEW_WIDTH as u32 * scale);
+        let size = (
+            VIEW_WIDTH as u32 * UI_SCALE as u32,
+            VIEW_WIDTH as u32 * UI_SCALE as u32,
+        );
 
         Self {
             editor_state: CustomWgpuEditorState::from_size(size),

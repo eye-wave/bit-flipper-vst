@@ -1,5 +1,4 @@
 use super::{VIEW_HEIGHT, VIEW_WIDTH};
-use crate::BitFlipperParams;
 use std::{any::Any, sync::Arc};
 
 mod background;
@@ -7,6 +6,7 @@ mod button;
 mod digit;
 mod monitor;
 mod postprocess;
+mod slider;
 mod static_box;
 
 pub(super) mod pipeline;
@@ -17,10 +17,11 @@ pub use button::*;
 pub use digit::*;
 pub use monitor::*;
 pub use postprocess::*;
+pub use slider::*;
 pub use static_box::*;
 
 pub trait UiElement {
-    fn prerender(&mut self, _queue: &wgpu::Queue, _params: Arc<BitFlipperParams>) {}
+    fn prerender(&mut self, _queue: &wgpu::Queue, _params: Arc<crate::BitFlipperParams>) {}
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
@@ -63,9 +64,11 @@ impl UiBox for [u16; 4] {
 }
 
 pub trait UiInteractive: UiElement + UiBox {
-    fn is_mouse_over(&self, mouse_pos: (u16, u16)) -> bool {
+    fn is_mouse_over(&self, mouse_pos: (i16, i16)) -> bool {
         let (x, y) = self.position();
         let (mouse_x, mouse_y) = mouse_pos;
+        let mouse_x = mouse_x as u16;
+        let mouse_y = mouse_y as u16;
 
         mouse_x >= x && mouse_x < x + self.width() && mouse_y >= y && mouse_y < y + self.height()
     }
