@@ -53,20 +53,13 @@ impl SharedMonitorPipeline {
         });
 
         let vertex_layout = wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<f32>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32,
-                },
-                wgpu::VertexAttribute {
-                    offset: 4,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32,
-                },
-            ],
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32,
+            }],
         };
 
         let pipeline = create_pipeline(
@@ -94,10 +87,9 @@ impl Monitor {
         position: (u16, u16),
         pipeline: Arc<SharedMonitorPipeline>,
     ) -> Self {
-        let mut samples = [0.0; MONITOR_WIDTH as usize * 2];
-        for i in 0..MONITOR_WIDTH as usize {
-            samples[i * 2] = i as f32 / MONITOR_WIDTH as f32;
-            samples[i * 2 + 1] = (i as f32 / MONITOR_WIDTH as f32 * 2.0 * PI).sin();
+        let mut samples = [0.0f32; MONITOR_WIDTH as usize];
+        for (i, sample) in samples.iter_mut().enumerate() {
+            *sample = (i as f32 / MONITOR_WIDTH as f32 * 2.0 * PI).sin();
         }
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

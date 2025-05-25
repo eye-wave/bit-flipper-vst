@@ -7,7 +7,9 @@ struct MonitorUniforms {
 var<uniform> uniforms: MonitorUniforms;
 
 @vertex
-fn vs_main(@location(0) x: f32, @location(1) y: f32) -> @builtin(position) vec4<f32> {
+fn vs_main(@location(0) y: f32, @builtin(vertex_index) idx: u32) -> @builtin(position) vec4<f32> {
+  let x = f32(idx) / uniforms.position.z;
+  
   let px = uniforms.position.x + (x / (200.0/uniforms.position.z) * 2.0);
   let py = uniforms.position.y + (y / (200.0/uniforms.position.w)) + (uniforms.position.w / 200.0);
 
