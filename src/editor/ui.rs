@@ -1,5 +1,6 @@
 use super::{VIEW_HEIGHT, VIEW_WIDTH};
-use std::any::Any;
+use crate::BitFlipperParams;
+use std::{any::Any, sync::Arc};
 
 mod background;
 mod button;
@@ -17,6 +18,7 @@ pub use postprocess::*;
 pub use static_box::*;
 
 pub trait UiElement {
+    fn prerender(&mut self, _params: Arc<BitFlipperParams>) {}
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue);
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }

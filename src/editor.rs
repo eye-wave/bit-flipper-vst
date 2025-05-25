@@ -1,4 +1,5 @@
 use crate::BitFlipperParams;
+use crate::model::FlipModes;
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -113,12 +114,12 @@ impl CustomWgpuWindow {
             Box::new(Background::new(bg_pipeline.clone())),
             Box::new(StaticBox::new(&device, "gui_main", (46, 0), st_pipe.clone()).unwrap()),
             Box::new(StaticBox::new(&device, "gui_monitors", (18, 154), st_pipe.clone()).unwrap()),
-            Box::new(Button::new(&device, "btn_xor", (46, 51), st_pipe.clone()).unwrap()),
-            Box::new(Button::new(&device, "btn_or", (46, 68), st_pipe.clone()).unwrap()),
-            Box::new(Button::new(&device, "btn_and", (46, 85), st_pipe.clone()).unwrap()),
-            Box::new(Button::new(&device, "btn_not", (46, 102), st_pipe.clone()).unwrap()),
+            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Xor)),
+            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Or)),
+            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::And)),
+            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Not)),
             Box::new(Monitor::new(&device, (20, 155), monitor_pipeline.clone())),
-            Box::new(Monitor::new(&device, (106, 155), monitor_pipeline.clone())),
+            Box::new(Monitor::new(&device, (105, 155), monitor_pipeline.clone())),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -170,6 +171,10 @@ impl baseview::WindowHandler for CustomWgpuWindow {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        for element in self.scene_elements.iter_mut() {
+            element.prerender(self.params.clone());
+        }
 
         // --- First pass: render scene to offscreen grayscale texture ---
         {

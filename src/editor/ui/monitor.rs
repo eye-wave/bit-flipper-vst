@@ -6,7 +6,7 @@ use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH};
 use std::{f32::consts::PI, sync::Arc};
 use wgpu::{RenderPipeline, util::DeviceExt};
 
-const MONITOR_WIDTH: u16 = 75;
+const MONITOR_WIDTH: u16 = 76;
 const MONITOR_HEIGHT: u16 = 42;
 
 #[repr(C)]
