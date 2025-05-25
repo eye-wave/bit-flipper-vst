@@ -102,7 +102,7 @@ impl CustomWgpuWindow {
             texture_atlas.clone(),
         ));
 
-        let st_pipe = Arc::new(StaticBoxPipeline::new(
+        let pipe = Arc::new(StaticBoxPipeline::new(
             &device,
             tex_format,
             texture_atlas.clone(),
@@ -112,14 +112,17 @@ impl CustomWgpuWindow {
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(Background::new(bg_pipeline.clone())),
-            Box::new(StaticBox::new(&device, "gui_main", (46, 0), st_pipe.clone()).unwrap()),
-            Box::new(StaticBox::new(&device, "gui_monitors", (18, 154), st_pipe.clone()).unwrap()),
-            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Xor)),
-            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Or)),
-            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::And)),
-            Box::new(ButtonBuilder::new(&device, st_pipe.clone()).mode(FlipModes::Not)),
+            Box::new(StaticBox::new(&device, "gui_main", (46, 0), None, pipe.clone()).unwrap()),
+            Box::new(
+                StaticBox::new(&device, "gui_monitors", (18, 154), None, pipe.clone()).unwrap(),
+            ),
+            Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Xor)),
+            Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),
+            Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::And)),
+            Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Not)),
             Box::new(Monitor::new(&device, (20, 155), monitor_pipeline.clone())),
             Box::new(Monitor::new(&device, (105, 155), monitor_pipeline.clone())),
+            Box::new(DigitCluster::new(&device, pipe.clone())),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -173,7 +176,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         for element in self.scene_elements.iter_mut() {
-            element.prerender(self.params.clone());
+            element.prerender(&self.queue, self.params.clone());
         }
 
         // --- First pass: render scene to offscreen grayscale texture ---
@@ -194,7 +197,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             });
 
             for element in &self.scene_elements {
-                element.render(&mut rpass, &self.queue);
+                element.render(&mut rpass);
             }
         }
 
@@ -215,7 +218,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 occlusion_query_set: None,
             });
 
-            self.postprocess.render(&mut rpass, &self.queue);
+            self.postprocess.render(&mut rpass);
         }
 
         self.queue.submit(Some(encoder.finish()));
@@ -243,8 +246,33 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                         if let Some(el) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
                             let mouse_pos = self.event_store.mouse_pos;
 
-                            if self.event_store.mouse_down && el.is_mouse_over(mouse_pos) {
-                                el.onclick();
+                            if el.is_mouse_over(mouse_pos) {
+                                let setter = ParamSetter::new(&*self.gui_context);
+                                let norm = self.params.mode.preview_normalized(el.get_state());
+
+                                setter.begin_set_parameter(&self.params.mode);
+                                setter.set_parameter_normalized(&self.params.mode, norm);
+                                setter.end_set_parameter(&self.params.mode);
+                            }
+
+                            continue;
+                        }
+
+                        if let Some(cluster) = el.as_any_mut().downcast_mut::<DigitCluster>() {
+                            for digit in cluster.digits.iter_mut() {
+                                if digit.is_mouse_over(self.event_store.mouse_pos) {
+                                    if let Some(param) = self.params.bits.get_bit_param(digit.id())
+                                    {
+                                        let setter = ParamSetter::new(&*self.gui_context);
+                                        let norm = param.preview_normalized(!param.value());
+
+                                        setter.begin_set_parameter(param);
+                                        setter.set_parameter_normalized(param, norm);
+                                        setter.end_set_parameter(param);
+                                    }
+
+                                    break;
+                                }
                             }
                         }
                     }

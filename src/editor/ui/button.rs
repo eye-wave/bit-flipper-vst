@@ -1,4 +1,4 @@
-use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive};
+use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
 use crate::model::FlipModes;
 use std::sync::Arc;
 
@@ -15,20 +15,18 @@ impl Button {
         uv_segment: &str,
         position: (u16, u16),
         pipeline: Arc<StaticBoxPipeline>,
-    ) -> Option<Self> {
-        if let Some(static_box) = StaticBox::new(device, uv_segment, position, pipeline) {
-            return Some(Self {
-                is_on: false,
-                state: flip_mode,
-                static_box,
-            });
-        }
+    ) -> Result<Self, TextureError> {
+        let static_box = StaticBox::new(device, uv_segment, position, None, pipeline)?;
 
-        None
+        Ok(Self {
+            is_on: false,
+            state: flip_mode,
+            static_box,
+        })
     }
 
-    pub fn onclick(&mut self) {
-        self.is_on = !self.is_on
+    pub fn get_state(&self) -> FlipModes {
+        self.state
     }
 }
 
@@ -53,23 +51,23 @@ impl UiElement for Button {
         self
     }
 
-    fn prerender(&mut self, params: Arc<crate::BitFlipperParams>) {
+    fn prerender(&mut self, _queue: &wgpu::Queue, params: Arc<crate::BitFlipperParams>) {
         self.is_on = self.state == params.mode.value()
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue) {
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         if self.is_on {
-            self.static_box.render(render_pass, queue);
+            self.static_box.render(render_pass);
         }
     }
 }
 
-pub struct ButtonBuilder<'a> {
+pub struct ModeButtonBuilder<'a> {
     d: &'a wgpu::Device,
     p: Arc<StaticBoxPipeline>,
 }
 
-impl<'a> ButtonBuilder<'a> {
+impl<'a> ModeButtonBuilder<'a> {
     pub fn new(device: &'a wgpu::Device, pipeline: Arc<StaticBoxPipeline>) -> Self {
         Self {
             d: device,

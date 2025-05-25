@@ -78,6 +78,44 @@ macro_rules! add_bit {
 }
 
 impl BitParams {
+    pub fn get_bit_param(&self, id: u8) -> Option<&BoolParam> {
+        match id {
+            1 => Some(&self.mask_bit_1),
+            2 => Some(&self.mask_bit_2),
+            3 => Some(&self.mask_bit_3),
+            4 => Some(&self.mask_bit_4),
+            5 => Some(&self.mask_bit_5),
+            6 => Some(&self.mask_bit_6),
+            7 => Some(&self.mask_bit_7),
+            8 => Some(&self.mask_bit_8),
+            9 => Some(&self.mask_bit_9),
+            10 => Some(&self.mask_bit_10),
+            11 => Some(&self.mask_bit_11),
+            12 => Some(&self.mask_bit_12),
+            13 => Some(&self.mask_bit_13),
+            14 => Some(&self.mask_bit_14),
+            15 => Some(&self.mask_bit_15),
+            16 => Some(&self.mask_bit_16),
+            17 => Some(&self.mask_bit_17),
+            18 => Some(&self.mask_bit_18),
+            19 => Some(&self.mask_bit_19),
+            20 => Some(&self.mask_bit_20),
+            21 => Some(&self.mask_bit_21),
+            22 => Some(&self.mask_bit_22),
+            23 => Some(&self.mask_bit_23),
+            24 => Some(&self.mask_bit_24),
+            25 => Some(&self.mask_bit_25),
+            26 => Some(&self.mask_bit_26),
+            27 => Some(&self.mask_bit_27),
+            28 => Some(&self.mask_bit_28),
+            29 => Some(&self.mask_bit_29),
+            30 => Some(&self.mask_bit_30),
+            31 => Some(&self.mask_bit_31),
+            32 => Some(&self.mask_bit_32),
+            _ => None,
+        }
+    }
+
     pub fn to_u32(&self) -> u32 {
         let mut result = 0u32;
 

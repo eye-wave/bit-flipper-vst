@@ -155,7 +155,7 @@ impl UiElement for Background {
         self
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue) {
+    fn prerender(&mut self, queue: &wgpu::Queue, _params: Arc<crate::BitFlipperParams>) {
         let time = self.shared_pipeline.start_time.elapsed().as_secs_f32();
         let updated = BackgroundUniforms {
             uv_region: self.shared_pipeline.atlas.get_bounds("background").unwrap(),
@@ -168,7 +168,9 @@ impl UiElement for Background {
             0,
             bytemuck::bytes_of(&updated),
         );
+    }
 
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         render_pass.set_pipeline(self.shared_pipeline.pipeline());
         render_pass.set_bind_group(0, &self.shared_pipeline.atlas.bind_group, &[]);
         render_pass.set_bind_group(1, &self.shared_pipeline.uniform_bind_group, &[]);

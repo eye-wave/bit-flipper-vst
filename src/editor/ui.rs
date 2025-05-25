@@ -4,6 +4,7 @@ use std::{any::Any, sync::Arc};
 
 mod background;
 mod button;
+mod digit;
 mod monitor;
 mod postprocess;
 mod static_box;
@@ -13,13 +14,14 @@ pub(super) mod texture;
 
 pub use background::*;
 pub use button::*;
+pub use digit::*;
 pub use monitor::*;
 pub use postprocess::*;
 pub use static_box::*;
 
 pub trait UiElement {
-    fn prerender(&mut self, _params: Arc<BitFlipperParams>) {}
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>, queue: &wgpu::Queue);
+    fn prerender(&mut self, _queue: &wgpu::Queue, _params: Arc<BitFlipperParams>) {}
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 

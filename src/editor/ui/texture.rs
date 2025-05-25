@@ -1,4 +1,20 @@
+use core::fmt;
 use std::collections::HashMap;
+
+#[derive(Debug)]
+pub enum TextureError {
+    NotFound(String),
+}
+
+impl fmt::Display for TextureError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotFound(str) => write!(f, "UV map \"{str}\" does not exist."),
+        }
+    }
+}
+
+impl std::error::Error for TextureError {}
 
 pub struct TextureAtlas {
     pub bind_group: wgpu::BindGroup,
@@ -15,6 +31,26 @@ const UV_MAP: &[(&str, [u16; 4])] = &[
     ("btn_or", [116, 31, 132, 47]),
     ("btn_and", [132, 31, 148, 47]),
     ("btn_not", [148, 31, 164, 47]),
+    //
+    ("digi_1_0", [173, 0, 182, 6]),
+    ("digi_1_1", [182, 0, 191, 6]),
+    ("digi_1_2", [191, 0, 200, 6]),
+    ("digi_1_3", [173, 6, 182, 12]),
+    ("digi_1_4", [182, 6, 191, 12]),
+    ("digi_1_5", [191, 6, 200, 12]),
+    ("digi_1_6", [173, 12, 182, 18]),
+    ("digi_1_7", [182, 12, 191, 18]),
+    ("digi_1_8", [191, 12, 200, 18]),
+    //
+    ("digi_0_0", [173, 18, 182, 24]),
+    ("digi_0_1", [182, 18, 191, 24]),
+    ("digi_0_2", [191, 18, 200, 24]),
+    ("digi_0_3", [173, 24, 182, 30]),
+    ("digi_0_4", [182, 24, 191, 30]),
+    ("digi_0_5", [191, 24, 200, 30]),
+    ("digi_0_6", [173, 30, 182, 36]),
+    ("digi_0_7", [182, 30, 191, 36]),
+    ("digi_0_8", [191, 30, 200, 36]),
 ];
 
 impl TextureAtlas {
@@ -112,7 +148,7 @@ impl TextureAtlas {
         }
     }
 
-    pub fn get_uvs(&self, name: &str) -> Option<[f32; 12]> {
+    pub fn get_uvs(&self, name: &str) -> Result<[f32; 12], TextureError> {
         if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
             let (width, height) = self.tex_size;
 
@@ -126,13 +162,13 @@ impl TextureAtlas {
                 u0, v1, u1, v0, u1, v1, // triangle 2
             ];
 
-            return Some(uvs);
+            return Ok(uvs);
         }
 
-        None
+        Err(TextureError::NotFound(name.to_string()))
     }
 
-    pub fn get_bounds(&self, name: &str) -> Option<[f32; 4]> {
+    pub fn get_bounds(&self, name: &str) -> Result<[f32; 4], TextureError> {
         if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
             let (width, height) = self.tex_size;
 
@@ -143,21 +179,21 @@ impl TextureAtlas {
                 (*y2 as f32 - *y1 as f32) / height as f32,
             ];
 
-            return Some(bounds);
+            return Ok(bounds);
         }
 
-        None
+        Err(TextureError::NotFound(name.to_string()))
     }
 
-    pub fn get_size(&self, name: &str) -> Option<(u16, u16)> {
+    pub fn get_size(&self, name: &str) -> Result<(u16, u16), TextureError> {
         if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
             let width = x2 - x1;
             let height = y2 - y1;
 
-            return Some((width, height));
+            return Ok((width, height));
         }
 
-        None
+        Err(TextureError::NotFound(name.to_string()))
     }
 }
 
