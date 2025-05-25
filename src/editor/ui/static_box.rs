@@ -61,6 +61,7 @@ impl StaticBoxPipeline {
             tex_format,
             &[&tex_atlas.layout],
             vertex_buffer_layouts,
+            wgpu::PrimitiveState::default(),
             &shader,
         );
 

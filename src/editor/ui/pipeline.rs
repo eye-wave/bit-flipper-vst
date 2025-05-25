@@ -7,6 +7,7 @@ pub fn create_pipeline(
     tex_format: wgpu::TextureFormat,
     bind_group_layouts: &[&wgpu::BindGroupLayout],
     vertex_layouts: &[wgpu::VertexBufferLayout],
+    primitive: wgpu::PrimitiveState,
     shader: &wgpu::ShaderModule,
 ) -> wgpu::RenderPipeline {
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -34,9 +35,7 @@ pub fn create_pipeline(
                 write_mask: wgpu::ColorWrites::ALL,
             })],
         }),
-        primitive: wgpu::PrimitiveState {
-            ..Default::default()
-        },
+        primitive,
         depth_stencil: None,
         multisample: wgpu::MultisampleState {
             count: 1,

@@ -1,5 +1,5 @@
 use crate::BitFlipperParams;
-use core::{CustomWgpuEditorHandle, ParentWindowHandleAdapter, baseview_window_to_surface_target};
+use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
 use nih_plug::prelude::*;
@@ -101,22 +101,24 @@ impl CustomWgpuWindow {
             texture_atlas.clone(),
         ));
 
-        let background = Background::new(bg_pipeline.clone());
-
         let st_pipe = Arc::new(StaticBoxPipeline::new(
             &device,
             tex_format,
             texture_atlas.clone(),
         ));
 
+        let monitor_pipeline = Arc::new(SharedMonitorPipeline::new(&device, tex_format));
+
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
-            Box::new(background),
+            Box::new(Background::new(bg_pipeline.clone())),
             Box::new(StaticBox::new(&device, "gui_main", (46, 0), st_pipe.clone()).unwrap()),
             Box::new(StaticBox::new(&device, "gui_monitors", (18, 154), st_pipe.clone()).unwrap()),
             Box::new(Button::new(&device, "btn_xor", (46, 51), st_pipe.clone()).unwrap()),
             Box::new(Button::new(&device, "btn_or", (46, 68), st_pipe.clone()).unwrap()),
             Box::new(Button::new(&device, "btn_and", (46, 85), st_pipe.clone()).unwrap()),
             Box::new(Button::new(&device, "btn_not", (46, 102), st_pipe.clone()).unwrap()),
+            Box::new(Monitor::new(&device, (20, 155), monitor_pipeline.clone())),
+            Box::new(Monitor::new(&device, (106, 155), monitor_pipeline.clone())),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -312,83 +314,6 @@ impl<'a> PersistentField<'a, CustomWgpuEditorState> for Arc<CustomWgpuEditorStat
         F: Fn(&CustomWgpuEditorState) -> R,
     {
         f(self)
-    }
-}
-
-pub struct CustomWgpuEditor {
-    params: Arc<BitFlipperParams>,
-
-    /// The scaling factor reported by the host, if any. On macOS this will never be set and we
-    /// should use the system scaling factor instead.
-    scaling_factor: AtomicCell<Option<f32>>,
-}
-
-impl Editor for CustomWgpuEditor {
-    fn spawn(
-        &self,
-        parent: ParentWindowHandle,
-        context: Arc<dyn GuiContext>,
-    ) -> Box<dyn std::any::Any + Send> {
-        let (unscaled_width, unscaled_height) = self.params.editor_state.size();
-        let scaling_factor = self.scaling_factor.load();
-
-        let gui_context = Arc::clone(&context);
-
-        let params = Arc::clone(&self.params);
-
-        let window = baseview::Window::open_parented(
-            &ParentWindowHandleAdapter(parent),
-            baseview::WindowOpenOptions {
-                title: String::from("WGPU Window"),
-                // Baseview should be doing the DPI scaling for us
-                size: baseview::Size::new(unscaled_width as f64, unscaled_height as f64),
-                // NOTE: For some reason passing 1.0 here causes the UI to be scaled on macOS but
-                //       not the mouse events.
-                scale: scaling_factor
-                    .map(|factor| baseview::WindowScalePolicy::ScaleFactor(factor as f64))
-                    .unwrap_or(baseview::WindowScalePolicy::SystemScaleFactor),
-
-                // NOTE: The OpenGL feature in baseview is not needed here, but rust-analyzer gets
-                // confused when some crates do use it and others don't.
-                gl_config: None,
-            },
-            move |window: &mut baseview::Window<'_>| -> CustomWgpuWindow {
-                CustomWgpuWindow::new(window, gui_context, params, scaling_factor.unwrap_or(1.0))
-            },
-        );
-
-        self.params.editor_state.open.store(true, Ordering::Release);
-        Box::new(CustomWgpuEditorHandle {
-            state: self.params.editor_state.clone(),
-            window,
-        })
-    }
-
-    fn size(&self) -> (u32, u32) {
-        self.params.editor_state.size()
-    }
-
-    fn set_scale_factor(&self, factor: f32) -> bool {
-        // If the editor is currently open then the host must not change the current HiDPI scale as
-        // we don't have a way to handle that. Ableton Live does this.
-        if self.params.editor_state.is_open() {
-            return false;
-        }
-
-        self.scaling_factor.store(Some(factor));
-        true
-    }
-
-    fn param_value_changed(&self, _id: &str, _normalized_value: f32) {
-        // As mentioned above, for now we'll always force a redraw to allow meter widgets to work
-        // correctly. In the future we can use an `Arc<AtomicBool>` and only force a redraw when
-        // that boolean is set.
-    }
-
-    fn param_modulation_changed(&self, _id: &str, _modulation_offset: f32) {}
-
-    fn param_values_changed(&self) {
-        // Same
     }
 }
 

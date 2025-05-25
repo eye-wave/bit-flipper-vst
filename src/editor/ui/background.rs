@@ -120,6 +120,7 @@ impl BackgroundPipeline {
             tex_format,
             &[&texture_atlas.layout, &uniform_layout],
             vertex_buffer_layouts,
+            wgpu::PrimitiveState::default(),
             &shader,
         );
 

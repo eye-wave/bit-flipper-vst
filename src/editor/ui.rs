@@ -3,6 +3,7 @@ use std::any::Any;
 
 mod background;
 mod button;
+mod monitor;
 mod postprocess;
 mod static_box;
 
@@ -11,6 +12,7 @@ pub(super) mod texture;
 
 pub use background::*;
 pub use button::*;
+pub use monitor::*;
 pub use postprocess::*;
 pub use static_box::*;
 

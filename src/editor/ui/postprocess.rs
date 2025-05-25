@@ -1,3 +1,5 @@
+use wgpu::PrimitiveState;
+
 use super::{UiElement, pipeline::create_pipeline, texture::create_sampler};
 
 pub struct Postprocess {
@@ -111,7 +113,14 @@ impl Postprocess {
             ],
         });
 
-        let pipeline = create_pipeline(device, tex_format, &[&layout], &[], &shader);
+        let pipeline = create_pipeline(
+            device,
+            tex_format,
+            &[&layout],
+            &[],
+            PrimitiveState::default(),
+            &shader,
+        );
 
         Self {
             pipeline,
