@@ -21,7 +21,14 @@ pub use slider::*;
 pub use static_box::*;
 
 pub trait UiElement {
-    fn prerender(&mut self, _queue: &wgpu::Queue, _params: Arc<crate::BitFlipperParams>) {}
+    fn prerender(
+        &mut self,
+        _queue: &wgpu::Queue,
+        _params: Arc<crate::BitFlipperParams>,
+        _bus: &crate::Bus,
+    ) {
+    }
+
     fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }

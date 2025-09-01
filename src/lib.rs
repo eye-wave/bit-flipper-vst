@@ -1,13 +1,19 @@
+use bus::{Bus, BusHandle};
 use editor::{CustomWgpuEditorState, VIEW_WIDTH, create_editor};
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 mod editor;
+
+pub(crate) mod bus;
 pub(crate) mod model;
 
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,
+
+    bus_input: triple_buffer::Input<Bus>,
+    bus_handle: BusHandle,
 }
 
 pub(crate) const UI_SCALE: usize = 3;
@@ -31,8 +37,12 @@ struct BitFlipperParams {
 
 impl Default for BitFlipper {
     fn default() -> Self {
+        let (input_data, output_data) = triple_buffer::TripleBuffer::default().split();
+
         Self {
             params: Arc::new(BitFlipperParams::default()),
+            bus_input: input_data,
+            bus_handle: Arc::new(Mutex::new(output_data)),
         }
     }
 }
@@ -103,7 +113,7 @@ impl Plugin for BitFlipper {
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        create_editor(&self.params)
+        create_editor(&self.params, &self.bus_handle)
     }
 
     fn process(
@@ -112,6 +122,8 @@ impl Plugin for BitFlipper {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
+        let mut output_buf = Bus::default();
+
         for channel_samples in buffer.iter_samples() {
             let mask = self.params.bits.to_u32();
             let mode = self.params.mode.value();
@@ -120,7 +132,13 @@ impl Plugin for BitFlipper {
             for sample in channel_samples {
                 *sample *= gain;
                 *sample = mode.transform(*sample, mask);
+
+                output_buf.write(*sample);
             }
+        }
+
+        if self.params.editor_state.is_open() {
+            self.bus_input.write(output_buf);
         }
 
         ProcessStatus::Normal

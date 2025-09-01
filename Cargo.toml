@@ -29,6 +29,7 @@ rand = "^0.9"
 raw-window-handle = "0.5"
 raw-window-handle-06 = { package = "raw-window-handle", version = "0.6" }
 serde = { version = "1.0", features = ["derive"] }
+triple_buffer = "8.1.1"
 wgpu = "^25"
 
 [build-dependencies]

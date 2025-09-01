@@ -1,5 +1,6 @@
 use crate::model::FlipModes;
-use crate::{BitFlipperParams, UI_SCALE};
+use crate::{BitFlipperParams, BusHandle, UI_SCALE};
+
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -37,6 +38,7 @@ pub struct CustomWgpuWindow {
     grayscale_view: wgpu::TextureView,
 
     scene_elements: Vec<Box<dyn UiElement>>,
+    bus_handle: BusHandle,
 
     params: Arc<BitFlipperParams>,
     event_store: EventStore,
@@ -46,17 +48,25 @@ impl CustomWgpuWindow {
     fn new(
         window: &mut baseview::Window<'_>,
         gui_context: Arc<dyn GuiContext>,
+        bus_handle: BusHandle,
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
         let target = baseview_window_to_surface_target(window);
 
-        pollster::block_on(Self::create(target, gui_context, params, scaling_factor))
+        pollster::block_on(Self::create(
+            target,
+            gui_context,
+            bus_handle,
+            params,
+            scaling_factor,
+        ))
     }
 
     async fn create(
         target: SurfaceTargetUnsafe,
         gui_context: Arc<dyn GuiContext>,
+        bus_handle: BusHandle,
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
@@ -127,8 +137,11 @@ impl CustomWgpuWindow {
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::And)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Not)),
-            Box::new(Monitor::new(&device, (20, 155), monitor_pipeline.clone())),
-            Box::new(Monitor::new(&device, (105, 155), monitor_pipeline.clone())),
+            Box::new(MonitorGroup::new(
+                &device,
+                [(20, 155), (105, 155)],
+                monitor_pipeline.clone(),
+            )),
             Box::new(DigitCluster::new(&device, pipe.clone())),
             Box::new(Slider::new(&device, (74, 142), slide_pipe.clone())),
         ];
@@ -163,6 +176,7 @@ impl CustomWgpuWindow {
             grayscale_view,
             //
             scene_elements,
+            bus_handle,
             //
             params,
             event_store: EventStore::default(),
@@ -172,6 +186,9 @@ impl CustomWgpuWindow {
 
 impl baseview::WindowHandler for CustomWgpuWindow {
     fn on_frame(&mut self, _window: &mut baseview::Window) {
+        let mut reader = self.bus_handle.lock().unwrap();
+        let bus = reader.read();
+
         let frame = self
             .surface
             .get_current_texture()
@@ -184,7 +201,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         for element in self.scene_elements.iter_mut() {
-            element.prerender(&self.queue, self.params.clone());
+            element.prerender(&self.queue, self.params.clone(), bus);
         }
 
         // --- First pass: render scene to offscreen grayscale texture ---
@@ -390,9 +407,13 @@ impl<'a> PersistentField<'a, CustomWgpuEditorState> for Arc<CustomWgpuEditorStat
     }
 }
 
-pub fn create_editor(params: &Arc<BitFlipperParams>) -> Option<Box<dyn Editor>> {
+pub fn create_editor(
+    params: &Arc<BitFlipperParams>,
+    bus_handle: &crate::BusHandle,
+) -> Option<Box<dyn Editor>> {
     Some(Box::new(CustomWgpuEditor {
         params: Arc::clone(params),
+        bus_handle: Arc::clone(bus_handle),
 
         // TODO: We can't get the size of the window when baseview does its own scaling, so if the
         //       host does not set a scale factor on Windows or Linux we should just use a factor of

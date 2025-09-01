@@ -160,7 +160,12 @@ impl UiElement for Slider {
         self
     }
 
-    fn prerender(&mut self, queue: &wgpu::Queue, params: Arc<crate::BitFlipperParams>) {
+    fn prerender(
+        &mut self,
+        queue: &wgpu::Queue,
+        params: Arc<crate::BitFlipperParams>,
+        _buffer: &crate::Bus,
+    ) {
         let value = params.pre_gain.value();
         let value = params.pre_gain.preview_normalized(value);
 

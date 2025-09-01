@@ -2,9 +2,10 @@ use super::{
     UiBox, UiElement,
     pipeline::{SharedPipeline, create_pipeline},
 };
-use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH};
 use std::{f32::consts::PI, sync::Arc};
 use wgpu::{RenderPipeline, util::DeviceExt};
+
+use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH};
 
 const MONITOR_WIDTH: u16 = 76;
 const MONITOR_HEIGHT: u16 = 42;
@@ -87,15 +88,12 @@ impl Monitor {
         position: (u16, u16),
         pipeline: Arc<SharedMonitorPipeline>,
     ) -> Self {
-        let mut samples = [0.0f32; MONITOR_WIDTH as usize];
-        for (i, sample) in samples.iter_mut().enumerate() {
-            *sample = (i as f32 / MONITOR_WIDTH as f32 * 2.0 * PI).sin();
-        }
+        let samples = sine_wave::<{ MONITOR_WIDTH as usize }>();
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Position Buffer"),
             contents: bytemuck::cast_slice(&samples),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let uniforms = MonitorUniforms {
@@ -131,6 +129,10 @@ impl Monitor {
             shared_pipeline: pipeline,
         }
     }
+
+    fn custom_prerender(&mut self, queue: &wgpu::Queue, buffer: &[f32; MONITOR_WIDTH as usize]) {
+        queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(buffer));
+    }
 }
 
 impl SharedPipeline for SharedMonitorPipeline {
@@ -164,4 +166,62 @@ impl UiBox for Monitor {
     fn position(&self) -> (u16, u16) {
         self.position
     }
+}
+
+pub struct MonitorGroup {
+    monitor_1: Monitor,
+    monitor_2: Monitor,
+}
+
+impl MonitorGroup {
+    pub fn new(
+        device: &wgpu::Device,
+        positions: [(u16, u16); 2],
+        pipeline: Arc<SharedMonitorPipeline>,
+    ) -> Self {
+        Self {
+            monitor_1: Monitor::new(device, positions[0], Arc::clone(&pipeline)),
+            monitor_2: Monitor::new(device, positions[1], Arc::clone(&pipeline)),
+        }
+    }
+}
+
+impl UiElement for MonitorGroup {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
+    fn prerender(
+        &mut self,
+        queue: &wgpu::Queue,
+        params: Arc<crate::BitFlipperParams>,
+        bus: &crate::Bus,
+    ) {
+        let resampled = bus.resample_into::<{ MONITOR_WIDTH as usize }>();
+        let mut remapped = sine_wave::<{ MONITOR_WIDTH as usize }>();
+
+        let mask = params.bits.to_u32();
+        let mode = params.mode.value();
+
+        for sample in remapped.iter_mut() {
+            *sample = mode.transform(*sample, mask);
+        }
+
+        self.monitor_1.custom_prerender(queue, &resampled);
+        self.monitor_2.custom_prerender(queue, &remapped);
+    }
+
+    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+        self.monitor_1.render(render_pass);
+        self.monitor_2.render(render_pass);
+    }
+}
+
+fn sine_wave<const N: usize>() -> [f32; N] {
+    let mut samples = [0.0f32; N];
+    for (i, sample) in samples.iter_mut().enumerate() {
+        *sample = (i as f32 / N as f32 * 2.0 * PI).sin();
+    }
+
+    samples
 }

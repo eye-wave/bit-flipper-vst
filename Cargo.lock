@@ -288,6 +288,7 @@ dependencies = [
  "raw-window-handle 0.5.2",
  "raw-window-handle 0.6.2",
  "serde",
+ "triple_buffer",
  "walkdir",
  "wgpu",
 ]
@@ -2156,6 +2157,15 @@ dependencies = [
  "indexmap",
  "toml_datetime",
  "winnow 0.7.3",
+]
+
+[[package]]
+name = "triple_buffer"
+version = "8.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "420466259f9fa5decc654c490b9ab538400e5420df8237f84ecbe20368bcf72b"
+dependencies = [
+ "crossbeam-utils",
 ]
 
 [[package]]

@@ -51,7 +51,12 @@ impl UiElement for Button {
         self
     }
 
-    fn prerender(&mut self, _queue: &wgpu::Queue, params: Arc<crate::BitFlipperParams>) {
+    fn prerender(
+        &mut self,
+        _queue: &wgpu::Queue,
+        params: Arc<crate::BitFlipperParams>,
+        _buffer: &crate::Bus,
+    ) {
         self.is_on = self.state == params.mode.value()
     }
 

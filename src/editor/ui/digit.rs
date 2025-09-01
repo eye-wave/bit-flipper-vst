@@ -35,7 +35,12 @@ impl UiElement for Digit {
         self
     }
 
-    fn prerender(&mut self, queue: &wgpu::Queue, params: Arc<crate::BitFlipperParams>) {
+    fn prerender(
+        &mut self,
+        queue: &wgpu::Queue,
+        params: Arc<crate::BitFlipperParams>,
+        _buffer: &crate::Bus,
+    ) {
         let val = params
             .bits
             .get_bit_param(self.id)
@@ -119,9 +124,14 @@ impl UiElement for DigitCluster {
         self
     }
 
-    fn prerender(&mut self, queue: &wgpu::Queue, params: Arc<crate::BitFlipperParams>) {
+    fn prerender(
+        &mut self,
+        queue: &wgpu::Queue,
+        params: Arc<crate::BitFlipperParams>,
+        _buffer: &crate::Bus,
+    ) {
         for digi in self.digits.iter_mut() {
-            digi.prerender(queue, params.clone());
+            digi.prerender(queue, params.clone(), _buffer);
         }
     }
 

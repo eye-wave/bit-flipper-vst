@@ -155,7 +155,12 @@ impl UiElement for Background {
         self
     }
 
-    fn prerender(&mut self, queue: &wgpu::Queue, _params: Arc<crate::BitFlipperParams>) {
+    fn prerender(
+        &mut self,
+        queue: &wgpu::Queue,
+        _params: Arc<crate::BitFlipperParams>,
+        _buffer: &crate::Bus,
+    ) {
         let time = self.shared_pipeline.start_time.elapsed().as_secs_f32();
         let updated = BackgroundUniforms {
             uv_region: self.shared_pipeline.atlas.get_bounds("background").unwrap(),
