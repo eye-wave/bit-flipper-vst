@@ -1,3 +1,5 @@
+#![feature(array_try_from_fn)]
+
 use bus::{Bus, BusHandle};
 use editor::{CustomWgpuEditorState, VIEW_WIDTH, create_editor};
 use model::{BitParams, FlipModes};

@@ -8,6 +8,7 @@ mod monitor;
 mod postprocess;
 mod slider;
 mod static_box;
+mod text;
 
 pub(super) mod pipeline;
 pub(super) mod texture;
@@ -19,6 +20,7 @@ pub use monitor::*;
 pub use postprocess::*;
 pub use slider::*;
 pub use static_box::*;
+pub use text::*;
 
 pub trait UiElement {
     fn prerender(

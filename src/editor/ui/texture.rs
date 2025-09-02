@@ -52,6 +52,20 @@ pub enum UVSegment {
     UV_digi_0_6,
     UV_digi_0_7,
     UV_digi_0_8,
+    UV_num_0,
+    UV_num_1,
+    UV_num_2,
+    UV_num_3,
+    UV_num_4,
+    UV_num_5,
+    UV_num_6,
+    UV_num_7,
+    UV_num_8,
+    UV_num_9,
+    UV_num_dot,
+    UV_num_minus,
+    UV_num_d,
+    UV_num_B,
 }
 
 impl UVSegment {
@@ -89,6 +103,21 @@ const UV_MAP: &[(UVSegment, [u16; 4])] = &[
     (UVSegment::UV_digi_0_6, [173, 30, 182, 36]),
     (UVSegment::UV_digi_0_7, [182, 30, 191, 36]),
     (UVSegment::UV_digi_0_8, [191, 30, 200, 36]),
+    //
+    (UVSegment::UV_num_0, [100, 0, 106, 8]),
+    (UVSegment::UV_num_1, [106, 0, 112, 8]),
+    (UVSegment::UV_num_2, [112, 0, 118, 8]),
+    (UVSegment::UV_num_3, [118, 0, 124, 8]),
+    (UVSegment::UV_num_4, [124, 0, 130, 8]),
+    (UVSegment::UV_num_dot, [130, 0, 136, 8]),
+    (UVSegment::UV_num_minus, [136, 0, 142, 8]),
+    (UVSegment::UV_num_5, [100, 8, 106, 16]),
+    (UVSegment::UV_num_6, [106, 8, 112, 16]),
+    (UVSegment::UV_num_7, [112, 8, 118, 16]),
+    (UVSegment::UV_num_8, [118, 8, 124, 16]),
+    (UVSegment::UV_num_9, [124, 8, 130, 16]),
+    (UVSegment::UV_num_d, [130, 8, 136, 16]),
+    (UVSegment::UV_num_B, [136, 8, 142, 16]),
 ];
 
 impl TextureAtlas {

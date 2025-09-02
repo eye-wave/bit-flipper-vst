@@ -19,7 +19,7 @@ pub struct StaticBox {
     height: u16,
     uv_buffer: wgpu::Buffer,
     position_buffer: wgpu::Buffer,
-    uniform_buffer: wgpu::Buffer,
+    // uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 }
 
@@ -142,13 +142,13 @@ impl StaticBox {
             uv_buffer,
             shared_pipeline: pipeline,
             uniform_bind_group,
-            uniform_buffer,
+            // uniform_buffer,
         })
     }
 
-    pub fn change_color_mask(&mut self, queue: &wgpu::Queue, new_alpha: f32) {
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&new_alpha));
-    }
+    // pub fn change_color_mask(&mut self, queue: &wgpu::Queue, new_alpha: f32) {
+    //     queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&new_alpha));
+    // }
 
     pub fn swap_uv(
         &mut self,

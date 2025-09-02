@@ -1,7 +1,5 @@
 use crate::model::FlipModes;
 use crate::{BitFlipperParams, BusHandle, UI_SCALE};
-use texture::UVSegment::*;
-
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -9,6 +7,7 @@ use nih_plug::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use texture::UVSegment::*;
 use ui::texture::TextureAtlas;
 use ui::*;
 use wgpu::SurfaceTargetUnsafe;
@@ -19,10 +18,17 @@ pub const VIEW_HEIGHT: u16 = 200;
 mod core;
 mod ui;
 
+fn downscale(pos: (f32, f32)) -> (i16, i16) {
+    (
+        (pos.0 / UI_SCALE as f32) as i16,
+        (pos.1 / UI_SCALE as f32) as i16,
+    )
+}
+
 #[derive(Debug, Default)]
 pub struct EventStore {
-    mouse_pos: (i16, i16),
-    drag_start: (i16, i16),
+    mouse_pos: (f32, f32),
+    drag_start: (f32, f32),
     dragging_slider: bool,
     mouse_down: bool,
 }
@@ -145,6 +151,7 @@ impl CustomWgpuWindow {
             )),
             Box::new(DigitCluster::new(&device, pipe.clone())),
             Box::new(Slider::new(&device, (74, 142), slide_pipe.clone())),
+            Box::new(VolumeText::new(&device, (74, 142), pipe.clone()).unwrap()),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -274,7 +281,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                         if let Some(btn) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
                             let mouse_pos = self.event_store.mouse_pos;
 
-                            if btn.is_mouse_over(mouse_pos) {
+                            if btn.is_mouse_over(downscale(mouse_pos)) {
                                 let setter = ParamSetter::new(&*self.gui_context);
                                 let norm = self.params.mode.preview_normalized(btn.get_state());
 
@@ -288,7 +295,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
 
                         if let Some(cluster) = el.as_any_mut().downcast_mut::<DigitCluster>() {
                             for digit in cluster.digits.iter_mut() {
-                                if digit.is_mouse_over(self.event_store.mouse_pos) {
+                                if digit.is_mouse_over(downscale(self.event_store.mouse_pos)) {
                                     if let Some(param) = self.params.bits.get_bit_param(digit.id())
                                     {
                                         let setter = ParamSetter::new(&*self.gui_context);
@@ -305,7 +312,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                         }
 
                         if let Some(slider) = el.as_mut().as_any_mut().downcast_mut::<Slider>() {
-                            if slider.is_mouse_over(self.event_store.mouse_pos) {
+                            if slider.is_mouse_over(downscale(self.event_store.mouse_pos)) {
                                 self.event_store.dragging_slider = true
                             }
 
@@ -321,27 +328,23 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                     position,
                     modifiers: _,
                 } => {
-                    self.event_store.mouse_pos = (
-                        position.x as i16 / UI_SCALE as i16,
-                        position.y as i16 / UI_SCALE as i16,
-                    );
+                    self.event_store.mouse_pos = (position.x as f32, position.y as f32);
 
                     if self.event_store.dragging_slider && self.event_store.mouse_down {
-                        let delta = self.event_store.drag_start.0 - self.event_store.mouse_pos.0;
-                        let delta = delta as f32 / 59.0;
+                        let delta = self.event_store.mouse_pos.0 - self.event_store.drag_start.0;
+                        self.event_store.drag_start.0 = self.event_store.mouse_pos.0;
 
-                        self.event_store.drag_start = self.event_store.mouse_pos;
+                        let slider_width = 59.0;
+                        let delta_norm = delta / slider_width;
+
+                        let param = &self.params.pre_gain;
+                        let new_norm =
+                            (param.preview_normalized(param.value()) + delta_norm).clamp(0.0, 1.0);
 
                         let setter = ParamSetter::new(&*self.gui_context);
 
-                        let param = &self.params.pre_gain;
-                        let value = param.value();
-                        let norm = param.preview_normalized(value);
-
-                        let norm = (norm - delta * 2.0).clamp(0.0, 1.0);
-
                         setter.begin_set_parameter(param);
-                        setter.set_parameter_normalized(param, norm);
+                        setter.set_parameter_normalized(param, new_norm);
                         setter.end_set_parameter(param);
                     }
                 }
