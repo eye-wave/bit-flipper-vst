@@ -1,5 +1,8 @@
 use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
-use crate::model::FlipModes;
+use crate::{
+    editor::texture::UVSegment::{self, *},
+    model::FlipModes,
+};
 use std::sync::Arc;
 
 pub struct Button {
@@ -12,7 +15,7 @@ impl Button {
     pub fn new(
         device: &wgpu::Device,
         flip_mode: FlipModes,
-        uv_segment: &str,
+        uv_segment: &UVSegment,
         position: (u16, u16),
         pipeline: Arc<StaticBoxPipeline>,
     ) -> Result<Self, TextureError> {
@@ -82,10 +85,10 @@ impl<'a> ModeButtonBuilder<'a> {
 
     pub fn mode(&self, mode: FlipModes) -> Button {
         match mode {
-            FlipModes::Xor => Button::new(self.d, mode, "btn_xor", (46, 51), self.p.clone()),
-            FlipModes::Or => Button::new(self.d, mode, "btn_or", (46, 68), self.p.clone()),
-            FlipModes::And => Button::new(self.d, mode, "btn_and", (46, 85), self.p.clone()),
-            FlipModes::Not => Button::new(self.d, mode, "btn_not", (46, 102), self.p.clone()),
+            FlipModes::Xor => Button::new(self.d, mode, &UV_btn_xor, (46, 51), self.p.clone()),
+            FlipModes::Or => Button::new(self.d, mode, &UV_btn_or, (46, 68), self.p.clone()),
+            FlipModes::And => Button::new(self.d, mode, &UV_btn_and, (46, 85), self.p.clone()),
+            FlipModes::Not => Button::new(self.d, mode, &UV_btn_not, (46, 102), self.p.clone()),
         }
         .unwrap()
     }

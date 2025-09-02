@@ -1,5 +1,6 @@
 use crate::model::FlipModes;
 use crate::{BitFlipperParams, BusHandle, UI_SCALE};
+use texture::UVSegment::*;
 
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
@@ -129,9 +130,9 @@ impl CustomWgpuWindow {
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(Background::new(bg_pipeline.clone())),
-            Box::new(StaticBox::new(&device, "gui_main", (46, 0), None, pipe.clone()).unwrap()),
+            Box::new(StaticBox::new(&device, &UV_gui_main, (46, 0), None, pipe.clone()).unwrap()),
             Box::new(
-                StaticBox::new(&device, "gui_monitors", (18, 154), None, pipe.clone()).unwrap(),
+                StaticBox::new(&device, &UV_gui_monitors, (18, 154), None, pipe.clone()).unwrap(),
             ),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Xor)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),

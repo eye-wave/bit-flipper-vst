@@ -1,3 +1,5 @@
+use crate::editor::texture::UVSegment;
+
 use super::pipeline::{SharedPipeline, create_pipeline};
 use super::texture::{TextureAtlas, TextureError};
 use super::{UiBox, UiElement};
@@ -93,7 +95,7 @@ impl StaticBoxPipeline {
 impl StaticBox {
     pub fn new(
         device: &wgpu::Device,
-        uv_segment: &str,
+        uv_segment: &UVSegment,
         position: (u16, u16),
         mask_color: Option<f32>,
         pipeline: Arc<StaticBoxPipeline>,
@@ -148,7 +150,11 @@ impl StaticBox {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&new_alpha));
     }
 
-    pub fn swap_uv(&mut self, queue: &wgpu::Queue, new_segment: &str) -> Result<(), TextureError> {
+    pub fn swap_uv(
+        &mut self,
+        queue: &wgpu::Queue,
+        new_segment: &UVSegment,
+    ) -> Result<(), TextureError> {
         let new_uvs = self.shared_pipeline.tex_atlas.get_uvs(new_segment)?;
 
         let (new_width, new_height) = self.shared_pipeline.tex_atlas.get_size(new_segment)?;

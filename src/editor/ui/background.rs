@@ -3,6 +3,7 @@ use super::{
     pipeline::{SharedPipeline, create_pipeline},
     texture::TextureAtlas,
 };
+use crate::editor::texture::UVSegment::*;
 use std::{sync::Arc, time::Instant};
 use wgpu::util::DeviceExt;
 
@@ -50,7 +51,7 @@ impl BackgroundPipeline {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        let uvs = texture_atlas.get_uvs("background").unwrap();
+        let uvs = texture_atlas.get_uvs(&UV_background).unwrap();
         let uv_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("UV Buffer"),
             contents: bytemuck::cast_slice(&uvs),
@@ -79,7 +80,7 @@ impl BackgroundPipeline {
         ];
 
         let uniforms = BackgroundUniforms {
-            uv_region: texture_atlas.get_bounds("background").unwrap(),
+            uv_region: texture_atlas.get_bounds(&UV_background).unwrap(),
             time: 0.0,
             _padding: [0.0; 3],
         };
@@ -163,7 +164,11 @@ impl UiElement for Background {
     ) {
         let time = self.shared_pipeline.start_time.elapsed().as_secs_f32();
         let updated = BackgroundUniforms {
-            uv_region: self.shared_pipeline.atlas.get_bounds("background").unwrap(),
+            uv_region: self
+                .shared_pipeline
+                .atlas
+                .get_bounds(&UV_background)
+                .unwrap(),
             time,
             _padding: [0.0; 3],
         };

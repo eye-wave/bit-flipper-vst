@@ -3,6 +3,7 @@ use super::{
     pipeline::{SharedPipeline, create_pipeline},
     texture::TextureAtlas,
 };
+use crate::editor::texture::UVSegment::*;
 use nih_plug::params::Param;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
@@ -107,14 +108,14 @@ impl Slider {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let uv_region = pipeline.tex_atlas.get_bounds("slider_handle").unwrap();
+        let uv_region = pipeline.tex_atlas.get_bounds(&UV_slider_handle).unwrap();
         let uniforms = SliderUniforms {
             uv_region,
             value: 0.0,
             _padding: [0.0; 3],
         };
 
-        let uv_data = pipeline.tex_atlas.get_uvs("slider_handle").unwrap();
+        let uv_data = pipeline.tex_atlas.get_uvs(&UV_slider_handle).unwrap();
         let uv_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("UV Buffer"),
             contents: bytemuck::cast_slice(&uv_data),

@@ -1,4 +1,5 @@
 use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
+use crate::editor::texture::UVSegment::{self, *};
 use rand::Rng;
 use std::sync::Arc;
 pub struct Digit {
@@ -8,6 +9,20 @@ pub struct Digit {
     is_on: bool,
 }
 
+enum DigitType {
+    One,
+    Zero,
+}
+
+impl From<bool> for DigitType {
+    fn from(value: bool) -> Self {
+        match value {
+            true => Self::One,
+            false => Self::Zero,
+        }
+    }
+}
+
 impl Digit {
     pub fn new(
         device: &wgpu::Device,
@@ -15,7 +30,7 @@ impl Digit {
         position: (u16, u16),
         pipeline: Arc<StaticBoxPipeline>,
     ) -> Result<Self, TextureError> {
-        let static_box = StaticBox::new(device, "digi_1_0", position, Some(2.0 / 6.0), pipeline)?;
+        let static_box = StaticBox::new(device, &UV_digi_1_0, position, Some(2.0 / 6.0), pipeline)?;
 
         Ok(Self {
             id,
@@ -27,6 +42,37 @@ impl Digit {
 
     pub fn id(&self) -> u8 {
         self.id
+    }
+
+    fn random_uv(&self, d_type: DigitType) -> (UVSegment, u8) {
+        let mut rng = rand::rng();
+        let n: u8 = rng.random_range(0..=8);
+
+        (
+            match d_type {
+                DigitType::One => match n {
+                    1 => UV_digi_1_1,
+                    2 => UV_digi_1_2,
+                    3 => UV_digi_1_3,
+                    4 => UV_digi_1_4,
+                    5 => UV_digi_1_5,
+                    6 => UV_digi_1_6,
+                    7 => UV_digi_1_7,
+                    _ => UV_digi_1_0,
+                },
+                DigitType::Zero => match n {
+                    1 => UV_digi_0_1,
+                    2 => UV_digi_0_2,
+                    3 => UV_digi_0_3,
+                    4 => UV_digi_0_4,
+                    5 => UV_digi_0_5,
+                    6 => UV_digi_0_6,
+                    7 => UV_digi_0_7,
+                    _ => UV_digi_0_0,
+                },
+            },
+            n,
+        )
     }
 }
 
@@ -50,10 +96,7 @@ impl UiElement for Digit {
         if self.is_on != val {
             self.is_on = val;
 
-            let mut rng = rand::rng();
-            let n: u8 = rng.random_range(0..=8);
-
-            let uv_id = format!("digi_{}_{}", val as u8, n);
+            let (uv_id, n) = self.random_uv(val.into());
             let mask_key = if ((n & 1) == 0) != val {
                 3.0 / 6.0
             } else {
