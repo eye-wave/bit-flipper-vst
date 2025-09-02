@@ -31,7 +31,7 @@ impl Digit {
         position: (u16, u16),
         pipeline: Arc<StaticBoxPipeline>,
     ) -> Result<Self, TextureError> {
-        let static_box = StaticBox::new(device, &UV_digi_1_0, position, Some(2.0 / 6.0), pipeline)?;
+        let static_box = StaticBox::new(device, &UV_digi_1_0, position, pipeline)?;
 
         Ok(Self {
             id,

@@ -274,7 +274,7 @@ checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bit_flipper"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "atomic_float",
  "baseview 0.1.0 (git+https://github.com/RustAudio/baseview.git)",

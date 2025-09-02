@@ -44,7 +44,7 @@ impl<const N: usize> Text<N> {
         let boxes: [StaticBox; N] = std::array::try_from_fn(|n| {
             let pos = (position.0 + n as u16 * 7, position.1);
 
-            StaticBox::new(device, &UV_num_0, pos, None, pipeline.clone())
+            StaticBox::new(device, &UV_num_0, pos, pipeline.clone())
         })?;
 
         Ok(Self {

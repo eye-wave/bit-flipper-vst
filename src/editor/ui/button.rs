@@ -19,7 +19,7 @@ impl Button {
         position: (u16, u16),
         pipeline: Arc<StaticBoxPipeline>,
     ) -> Result<Self, TextureError> {
-        let static_box = StaticBox::new(device, uv_segment, position, None, pipeline)?;
+        let static_box = StaticBox::new(device, uv_segment, position, pipeline)?;
 
         Ok(Self {
             is_on: false,

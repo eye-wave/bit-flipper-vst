@@ -19,11 +19,10 @@ impl Postprocess {
             source: wgpu::ShaderSource::Wgsl(include_str!("postprocess.wgsl").into()),
         });
 
-        let img = image::load_from_memory(include_bytes!(
-            "../../../assets/textures/__palette_lava__.png"
-        ))
-        .unwrap()
-        .to_rgba8();
+        let img =
+            image::load_from_memory(include_bytes!("../../../assets/textures/__palette__.png"))
+                .unwrap()
+                .to_rgba8();
 
         let palette_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Palette Texture"),

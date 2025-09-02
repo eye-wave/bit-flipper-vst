@@ -9,7 +9,6 @@ use wgpu::util::DeviceExt;
 pub struct StaticBoxPipeline {
     pub(super) pipeline: wgpu::RenderPipeline,
     pub(super) tex_atlas: Arc<TextureAtlas>,
-    pub(super) uniform_layout: wgpu::BindGroupLayout,
 }
 
 pub struct StaticBox {
@@ -19,8 +18,6 @@ pub struct StaticBox {
     height: u16,
     uv_buffer: wgpu::Buffer,
     position_buffer: wgpu::Buffer,
-    // uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
 }
 
 impl SharedPipeline for StaticBoxPipeline {
@@ -38,20 +35,6 @@ impl StaticBoxPipeline {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Static box Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("static_box.wgsl").into()),
-        });
-
-        let uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Uniform Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<f32>() as _),
-                },
-                count: None,
-            }],
         });
 
         let vertex_buffer_layouts = &[
@@ -78,7 +61,7 @@ impl StaticBoxPipeline {
         let pipeline = create_pipeline(
             device,
             tex_format,
-            &[&tex_atlas.layout, &uniform_layout],
+            &[&tex_atlas.layout],
             vertex_buffer_layouts,
             wgpu::PrimitiveState::default(),
             &shader,
@@ -87,7 +70,6 @@ impl StaticBoxPipeline {
         Self {
             pipeline,
             tex_atlas,
-            uniform_layout,
         }
     }
 }
@@ -97,7 +79,6 @@ impl StaticBox {
         device: &wgpu::Device,
         uv_segment: &UVSegment,
         position: (u16, u16),
-        mask_color: Option<f32>,
         pipeline: Arc<StaticBoxPipeline>,
     ) -> Result<Self, TextureError> {
         let (width, height) = pipeline.tex_atlas.get_size(uv_segment)?;
@@ -118,37 +99,15 @@ impl StaticBox {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Background Uniform Buffer"),
-            contents: bytemuck::bytes_of(&mask_color.unwrap_or(-1.0)),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Background Uniform Bind Group"),
-            layout: &pipeline.uniform_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
-        });
-
         Ok(Self {
             width,
             height,
             position,
-
             position_buffer,
             uv_buffer,
             shared_pipeline: pipeline,
-            uniform_bind_group,
-            // uniform_buffer,
         })
     }
-
-    // pub fn change_color_mask(&mut self, queue: &wgpu::Queue, new_alpha: f32) {
-    //     queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&new_alpha));
-    // }
 
     pub fn swap_uv(
         &mut self,
@@ -176,7 +135,6 @@ impl UiElement for StaticBox {
         render_pass.set_pipeline(self.shared_pipeline.pipeline());
 
         render_pass.set_bind_group(0, &self.shared_pipeline.tex_atlas.bind_group, &[]);
-        render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.position_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.uv_buffer.slice(..));

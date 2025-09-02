@@ -136,10 +136,8 @@ impl CustomWgpuWindow {
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(Background::new(bg_pipeline.clone())),
-            Box::new(StaticBox::new(&device, &UV_gui_main, (46, 0), None, pipe.clone()).unwrap()),
-            Box::new(
-                StaticBox::new(&device, &UV_gui_monitors, (18, 154), None, pipe.clone()).unwrap(),
-            ),
+            Box::new(StaticBox::new(&device, &UV_gui_main, (46, 0), pipe.clone()).unwrap()),
+            Box::new(StaticBox::new(&device, &UV_gui_monitors, (18, 154), pipe.clone()).unwrap()),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Xor)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::And)),
