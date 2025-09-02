@@ -20,7 +20,7 @@ impl Postprocess {
         });
 
         let img = image::load_from_memory(include_bytes!(
-            "../../../assets/textures/__palette__.png"
+            "../../../assets/textures/__palette_lava__.png"
         ))
         .unwrap()
         .to_rgba8();

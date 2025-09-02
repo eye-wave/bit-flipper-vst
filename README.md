@@ -1,11 +1,16 @@
 # Bit Flipper
 
 > [!WARNING]
-> Flipping the most significant bits can lead to very large DC offsets.
+> Flipping the most significant bits, or just using the "!" mode, **WILL lead to very large DC offsets**.
 
-A very simple distortion plugin that performs direct bit manipulation on audio samples, made with [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Vizia](https://github.com/vizia/vizia).
+A very simple distortion plugin that performs direct bit manipulation on audio samples, made with [nih-plug](https://github.com/robbert-vdh/nih-plug) and [Wgpu](https://wgpu.rs/).
 
-<p align="center"><img src="./assets/plugin-preview.webp"></p>
+<div align="center">
+  <img src="./assets/plugin_preview_01.png" width=310>
+  <img src="./assets/plugin_preview_04.png" width=310>
+  <img src="./assets/plugin_preview_03.png" width=310>
+  <img src="./assets/plugin_preview_02.png" width=310>
+</div>
 
 ## Tested on:
 
