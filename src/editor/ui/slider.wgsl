@@ -27,12 +27,15 @@ struct SliderUniforms {
 
 @group(1) @binding(0) var<uniform> uniforms: SliderUniforms;
 
+const VIEW_W: f32 = 200.0;
+const THUMB_W: f32 = 19.0;
+const SLIDER_W: f32 = 59.0;
 
 @fragment
 fn fs_main(@location(0) uv_coords: vec2<f32>) -> @location(0) vec4<f32> {
   let normalized_uv = (uv_coords.x - uniforms.uv_region.x) / uniforms.uv_region.z;
-  let scaled_uv = normalized_uv * (200.0/59.0) + 3800.0/3481.0;
-  let clamped = clamp(scaled_uv - uniforms.value * (259.0/59.0),0.0,1.0);
+  let scaled_uv = normalized_uv * (VIEW_W / SLIDER_W) + (VIEW_W * THUMB_W) / (SLIDER_W * SLIDER_W);
+  let clamped = clamp(scaled_uv - uniforms.value * (VIEW_W / SLIDER_W + 1.0),0.0,1.0);
 
   let denormalized_uv = vec2(uniforms.uv_region.x + clamped * uniforms.uv_region.z,uv_coords.y);
   
