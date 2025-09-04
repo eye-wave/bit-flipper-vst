@@ -160,7 +160,7 @@ impl UiElement for Background {
         &mut self,
         queue: &wgpu::Queue,
         _params: Arc<crate::BitFlipperParams>,
-        _buffer: &crate::Bus,
+        _buffer: &crate::WriteBuffer,
     ) {
         let time = self.shared_pipeline.start_time.elapsed().as_secs_f32();
         let updated = BackgroundUniforms {

@@ -83,7 +83,7 @@ impl UiElement for Digit {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        _buffer: &crate::Bus,
+        _buffer: &crate::WriteBuffer,
     ) {
         let val = params
             .bits
@@ -162,7 +162,7 @@ impl UiElement for DigitCluster {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        _buffer: &crate::Bus,
+        _buffer: &crate::WriteBuffer,
     ) {
         for digi in self.digits.iter_mut() {
             digi.prerender(queue, params.clone(), _buffer);

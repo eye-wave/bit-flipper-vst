@@ -195,7 +195,7 @@ impl UiElement for MonitorGroup {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        bus: &crate::Bus,
+        bus: &crate::WriteBuffer,
     ) {
         let resampled = bus.resample_into::<{ MONITOR_WIDTH as usize }>();
         let mut remapped = sine_wave::<{ MONITOR_WIDTH as usize }>();

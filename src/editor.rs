@@ -1,5 +1,5 @@
 use crate::model::FlipModes;
-use crate::{BitFlipperParams, BusHandle, UI_SCALE};
+use crate::{BitFlipperParams, BufHandle, UI_SCALE};
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -45,7 +45,7 @@ pub struct CustomWgpuWindow {
     grayscale_view: wgpu::TextureView,
 
     scene_elements: Vec<Box<dyn UiElement>>,
-    bus_handle: BusHandle,
+    bus_handle: BufHandle,
 
     params: Arc<BitFlipperParams>,
     event_store: EventStore,
@@ -55,7 +55,7 @@ impl CustomWgpuWindow {
     fn new(
         window: &mut baseview::Window<'_>,
         gui_context: Arc<dyn GuiContext>,
-        bus_handle: BusHandle,
+        bus_handle: BufHandle,
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
@@ -73,7 +73,7 @@ impl CustomWgpuWindow {
     async fn create(
         target: SurfaceTargetUnsafe,
         gui_context: Arc<dyn GuiContext>,
-        bus_handle: BusHandle,
+        bus_handle: BufHandle,
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
@@ -411,7 +411,7 @@ impl<'a> PersistentField<'a, CustomWgpuEditorState> for Arc<CustomWgpuEditorStat
 
 pub fn create_editor(
     params: &Arc<BitFlipperParams>,
-    bus_handle: &crate::BusHandle,
+    bus_handle: &crate::BufHandle,
 ) -> Option<Box<dyn Editor>> {
     Some(Box::new(CustomWgpuEditor {
         params: Arc::clone(params),

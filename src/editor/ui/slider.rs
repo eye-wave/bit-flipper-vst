@@ -165,7 +165,7 @@ impl UiElement for Slider {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        _buffer: &crate::Bus,
+        _buffer: &crate::WriteBuffer,
     ) {
         let value = params.pre_gain.value();
         let value = params.pre_gain.preview_normalized(value);

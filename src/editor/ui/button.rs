@@ -58,7 +58,7 @@ impl UiElement for Button {
         &mut self,
         _queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        _buffer: &crate::Bus,
+        _buffer: &crate::WriteBuffer,
     ) {
         self.is_on = self.state == params.mode.value()
     }

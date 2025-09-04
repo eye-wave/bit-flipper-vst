@@ -77,7 +77,7 @@ impl<const N: usize> UiElement for Text<N> {
         &mut self,
         queue: &wgpu::Queue,
         _params: Arc<crate::BitFlipperParams>,
-        _bus: &crate::Bus,
+        _bus: &crate::WriteBuffer,
     ) {
         for (b, ch) in self.boxes.iter_mut().zip(self.content.iter()) {
             b.swap_uv(queue, &(*ch).into()).ok();
@@ -118,7 +118,7 @@ impl UiElement for VolumeText {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        bus: &crate::Bus,
+        bus: &crate::WriteBuffer,
     ) {
         let mut text = params.pre_gain.to_string();
         if !text.starts_with("-") {

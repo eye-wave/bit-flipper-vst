@@ -1,6 +1,6 @@
 #![feature(array_try_from_fn)]
 
-use bus::{Bus, BusHandle};
+use buffer::{BufHandle, WriteBuffer};
 use editor::{CustomWgpuEditorState, VIEW_WIDTH, create_editor};
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
@@ -8,14 +8,15 @@ use std::sync::{Arc, Mutex};
 
 mod editor;
 
-pub(crate) mod bus;
+pub(crate) mod buffer;
 pub(crate) mod model;
 
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,
 
-    bus_input: triple_buffer::Input<Bus>,
-    bus_handle: BusHandle,
+    buf_size: usize,
+    buf_input: triple_buffer::Input<WriteBuffer>,
+    buf_handle: BufHandle,
 }
 
 pub(crate) const UI_SCALE: usize = 3;
@@ -43,8 +44,10 @@ impl Default for BitFlipper {
 
         Self {
             params: Arc::new(BitFlipperParams::default()),
-            bus_input: input_data,
-            bus_handle: Arc::new(Mutex::new(output_data)),
+
+            buf_size: 512,
+            buf_input: input_data,
+            buf_handle: Arc::new(Mutex::new(output_data)),
         }
     }
 }
@@ -108,14 +111,16 @@ impl Plugin for BitFlipper {
     fn initialize(
         &mut self,
         _audio_io_layout: &AudioIOLayout,
-        _buffer_config: &BufferConfig,
+        buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
+        self.buf_size = buffer_config.max_buffer_size as usize;
+
         true
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        create_editor(&self.params, &self.bus_handle)
+        create_editor(&self.params, &self.buf_handle)
     }
 
     fn process(
@@ -124,7 +129,7 @@ impl Plugin for BitFlipper {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
-        let mut output_buf = Bus::default();
+        let mut output_buf = WriteBuffer::from_size(self.buf_size);
 
         for channel_samples in buffer.iter_samples() {
             let mask = self.params.bits.to_u32();
@@ -140,7 +145,7 @@ impl Plugin for BitFlipper {
         }
 
         if self.params.editor_state.is_open() {
-            self.bus_input.write(output_buf);
+            self.buf_input.write(output_buf);
         }
 
         ProcessStatus::Normal
