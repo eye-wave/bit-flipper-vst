@@ -4,7 +4,9 @@ name: Automated Builds
 on:
   push:
     paths:
-      - 'src/**'
+      paths-ignore:
+        - 'README.md'
+        - 'assets/**'
     branches:
       - '**'
     tags:
