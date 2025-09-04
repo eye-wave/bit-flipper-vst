@@ -6,10 +6,13 @@ use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
 use std::sync::{Arc, Mutex};
 
+mod drop_files;
 mod editor;
 
 pub(crate) mod buffer;
 pub(crate) mod model;
+
+pub(crate) use drop_files::{ATLAS_BYTES, PALETTE_BYTES};
 
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,

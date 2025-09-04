@@ -1,5 +1,7 @@
 use wgpu::PrimitiveState;
 
+use crate::PALETTE_BYTES;
+
 use super::{UiElement, pipeline::create_pipeline, texture::create_sampler};
 
 pub struct Postprocess {
@@ -19,10 +21,7 @@ impl Postprocess {
             source: wgpu::ShaderSource::Wgsl(include_str!("postprocess.wgsl").into()),
         });
 
-        let img =
-            image::load_from_memory(include_bytes!("../../../assets/textures/__palette__.png"))
-                .unwrap()
-                .to_rgba8();
+        let img = image::load_from_memory(&PALETTE_BYTES).unwrap().to_rgba8();
 
         let palette_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Palette Texture"),
