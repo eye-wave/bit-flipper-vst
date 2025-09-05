@@ -12,6 +12,23 @@ A very simple distortion plugin that performs direct bit manipulation on audio s
   <img src="./assets/plugin_preview_02.png" width=310>
 </div>
 
+## Custom themes support !
+```text
+(Linux) $XDG_CONFIG_HOME/bit_flipper/
+(Windows) %APPDATA%\bit_flipper\
+(macOS) ~/Library/Application Support/bit_flipper/
+````
+
+* On Linux, this typically resolves to `~/.config/bit_flipper/`.
+* On Windows, it will use the standard AppData folder.
+
+⚠️ **Sandboxed environments (Flatpak, Snap, etc.)** may redirect the config directory to a sandbox path.
+For example, when running inside Flatpak, the textures may be stored under:
+
+```text
+/var/app/com.bitwig.BitwigStudio/config/bit_flipper/
+```
+
 ## Tested on:
 
 - ⣴⠶⣦ Bitwig on Pop!\_OS 22.04 🐧

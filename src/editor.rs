@@ -1,3 +1,4 @@
+use crate::editor::theme::load_textures;
 use crate::model::FlipModes;
 use crate::{BitFlipperParams, BufHandle, UI_SCALE};
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
@@ -16,6 +17,7 @@ pub const VIEW_WIDTH: u16 = 200;
 pub const VIEW_HEIGHT: u16 = 200;
 
 mod core;
+mod theme;
 mod ui;
 
 fn downscale(pos: (f32, f32)) -> (i16, i16) {
@@ -109,11 +111,13 @@ impl CustomWgpuWindow {
             .await
             .expect("Failed to create device");
 
+        let (palette_texture, atlas_texture) = load_textures();
+
         let surface_config = surface.get_default_config(&adapter, width, height).unwrap();
         surface.configure(&device, &surface_config);
         let tex_format = surface_config.format;
 
-        let texture_atlas = Arc::new(TextureAtlas::new(&device, &queue));
+        let texture_atlas = Arc::new(TextureAtlas::new(&device, &atlas_texture, &queue));
 
         let bg_pipeline = Arc::new(BackgroundPipeline::new(
             &device,
@@ -168,7 +172,13 @@ impl CustomWgpuWindow {
         });
 
         let grayscale_view = grayscale_texture.create_view(&Default::default());
-        let postprocess = Postprocess::new(&device, &queue, tex_format, &grayscale_view);
+        let postprocess = Postprocess::new(
+            &device,
+            &queue,
+            &palette_texture,
+            tex_format,
+            &grayscale_view,
+        );
 
         Self {
             gui_context,

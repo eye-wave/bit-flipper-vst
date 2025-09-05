@@ -1,6 +1,5 @@
 use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
 use crate::editor::texture::UVSegment::{self, *};
-use rand::Rng;
 use std::sync::Arc;
 
 pub struct Digit {
@@ -46,8 +45,7 @@ impl Digit {
     }
 
     fn random_uv(&self, d_type: DigitType) -> UVSegment {
-        let mut rng = rand::rng();
-        let n: u8 = rng.random_range(0..=8);
+        let n: u8 = fastrand::u8(..=8);
 
         match d_type {
             DigitType::One => match n {

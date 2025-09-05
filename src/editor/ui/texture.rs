@@ -1,4 +1,3 @@
-use crate::ATLAS_BYTES;
 use core::fmt;
 use std::collections::HashMap;
 
@@ -122,8 +121,8 @@ const UV_MAP: &[(UVSegment, [u16; 4])] = &[
 ];
 
 impl TextureAtlas {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
-        let img = image::load_from_memory(&ATLAS_BYTES).unwrap().to_rgba8();
+    pub fn new(device: &wgpu::Device, texture: &[u8], queue: &wgpu::Queue) -> Self {
+        let img = image::load_from_memory(texture).unwrap().to_rgba8();
 
         let (width, height) = img.dimensions();
         let texture_size = wgpu::Extent3d {
