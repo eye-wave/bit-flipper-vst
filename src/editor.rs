@@ -1,5 +1,5 @@
 use crate::bus::Bus;
-use crate::editor::theme::load_textures;
+use crate::editor::theme::{load_textures, open_theme_dir};
 use crate::model::FlipModes;
 use crate::{BitFlipperParams, UI_SCALE};
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
@@ -150,6 +150,7 @@ impl CustomWgpuWindow {
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::And)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Not)),
+            Box::new(OpenFolderBtn::new(&device, &UV_btn_open, (182, 2), pipe.clone()).unwrap()),
             Box::new(MonitorGroup::new(
                 &device,
                 [(20, 155), (105, 155)],
@@ -340,6 +341,14 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                                 }
 
                                 continue;
+                            }
+
+                            if let Some(btn) =
+                                el.as_mut().as_any_mut().downcast_mut::<OpenFolderBtn>()
+                            {
+                                if btn.is_mouse_over(downscale(self.event_store.mouse_pos)) {
+                                    open_theme_dir().ok();
+                                }
                             }
                         } else if let Some(btn) = el.as_any_mut().downcast_mut::<Warning>() {
                             let mouse_pos = self.event_store.mouse_pos;

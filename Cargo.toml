@@ -2,7 +2,7 @@ cargo-features = ["profile-rustflags", "trim-paths"]
 
 [package]
 name = "bit_flipper"
-version = "0.3.5"
+version = "0.3.6"
 edition = "2024"
 authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
 license = "GPL-3.0-or-later"
@@ -28,6 +28,7 @@ nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = [
     "assert_process_allocs",
     "standalone",
 ] }
+open = "5.3.2"
 pollster = "0.4.0"
 raw-window-handle = "0.5"
 raw-window-handle-06 = { package = "raw-window-handle", version = "0.6" }

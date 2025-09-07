@@ -32,3 +32,14 @@ pub fn load_textures() -> (Cow<'static, [u8]>, Cow<'static, [u8]>) {
         (Cow::Borrowed(DEFAULT_PALETTE), Cow::Borrowed(DEFAULT_ATLAS))
     }
 }
+
+pub fn open_theme_dir() -> std::io::Result<()> {
+    let config_dir = dirs::config_dir();
+    if let Some(tex_path) = config_dir.map(|p| p.join(env!("CARGO_PKG_NAME"))) {
+        if tex_path.exists() {
+            open::that(tex_path)?;
+        }
+    }
+
+    Ok(())
+}

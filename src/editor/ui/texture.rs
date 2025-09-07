@@ -34,6 +34,7 @@ pub enum UVSegment {
     UV_btn_or,
     UV_btn_and,
     UV_btn_not,
+    UV_btn_open,
     UV_slider_handle,
     UV_digi_1_0,
     UV_digi_1_1,
@@ -84,6 +85,7 @@ const UV_MAP: &[(UVSegment, [u16; 4])] = &[
     (UVSegment::UV_btn_or, [44, 173, 16, 16]),
     (UVSegment::UV_btn_and, [60, 173, 16, 16]),
     (UVSegment::UV_btn_not, [76, 173, 16, 16]),
+    (UVSegment::UV_btn_open, [28, 157, 16, 16]),
     (UVSegment::UV_slider_handle, [73, 165, 19, 8]),
     //
     (UVSegment::UV_digi_1_0, [0, 153, 9, 6]),
