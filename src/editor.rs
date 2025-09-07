@@ -1,6 +1,7 @@
+use crate::bus::Bus;
 use crate::editor::theme::load_textures;
 use crate::model::FlipModes;
-use crate::{BitFlipperParams, BufHandle, UI_SCALE};
+use crate::{BitFlipperParams, UI_SCALE};
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -47,7 +48,7 @@ pub struct CustomWgpuWindow {
     grayscale_view: wgpu::TextureView,
 
     scene_elements: Vec<Box<dyn UiElement>>,
-    bus_handle: BufHandle,
+    bus: Arc<Bus>,
 
     params: Arc<BitFlipperParams>,
     event_store: EventStore,
@@ -57,7 +58,8 @@ impl CustomWgpuWindow {
     fn new(
         window: &mut baseview::Window<'_>,
         gui_context: Arc<dyn GuiContext>,
-        bus_handle: BufHandle,
+
+        bus: Arc<Bus>,
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
@@ -66,7 +68,7 @@ impl CustomWgpuWindow {
         pollster::block_on(Self::create(
             target,
             gui_context,
-            bus_handle,
+            bus,
             params,
             scaling_factor,
         ))
@@ -75,7 +77,8 @@ impl CustomWgpuWindow {
     async fn create(
         target: SurfaceTargetUnsafe,
         gui_context: Arc<dyn GuiContext>,
-        bus_handle: BufHandle,
+        bus: Arc<Bus>,
+
         params: Arc<BitFlipperParams>,
         scaling_factor: f32,
     ) -> Self {
@@ -194,7 +197,7 @@ impl CustomWgpuWindow {
             grayscale_view,
             //
             scene_elements,
-            bus_handle,
+            bus,
             //
             params,
             event_store: EventStore::default(),
@@ -204,8 +207,10 @@ impl CustomWgpuWindow {
 
 impl baseview::WindowHandler for CustomWgpuWindow {
     fn on_frame(&mut self, _window: &mut baseview::Window) {
-        let mut reader = self.bus_handle.lock().unwrap();
-        let bus = reader.read();
+        // let mut reader = self.buf_handle.lock().unwrap();
+        // let bus = reader.read();
+
+        let buffer = self.bus.read();
 
         let frame = self
             .surface
@@ -219,7 +224,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         for element in self.scene_elements.iter_mut() {
-            element.prerender(&self.queue, self.params.clone(), bus);
+            element.prerender(&self.queue, self.params.clone(), &buffer);
         }
 
         // --- First pass: render scene to offscreen grayscale texture ---
@@ -450,13 +455,10 @@ impl<'a> PersistentField<'a, CustomWgpuEditorState> for Arc<CustomWgpuEditorStat
     }
 }
 
-pub fn create_editor(
-    params: &Arc<BitFlipperParams>,
-    bus_handle: &crate::BufHandle,
-) -> Option<Box<dyn Editor>> {
+pub fn create_editor(params: &Arc<BitFlipperParams>, bus: &Arc<Bus>) -> Option<Box<dyn Editor>> {
     Some(Box::new(CustomWgpuEditor {
         params: Arc::clone(params),
-        bus_handle: Arc::clone(bus_handle),
+        bus: Arc::clone(bus),
 
         // TODO: We can't get the size of the window when baseview does its own scaling, so if the
         //       host does not set a scale factor on Windows or Linux we should just use a factor of

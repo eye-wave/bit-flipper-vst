@@ -19,6 +19,7 @@ baseview = { git = "https://github.com/RustAudio/baseview.git", features = [
 ] }
 bytemuck = "1.23.0"
 crossbeam = "0.8"
+crossbeam-channel = "0.5.15"
 dirs = "6.0.0"
 fastrand = "2.3.0"
 image = { version = "0.25.6", default-features = false, features = ["png"] }
@@ -31,7 +32,6 @@ pollster = "0.4.0"
 raw-window-handle = "0.5"
 raw-window-handle-06 = { package = "raw-window-handle", version = "0.6" }
 serde = { version = "1.0", features = ["derive"] }
-triple_buffer = "8.1.1"
 wgpu = "^25"
 
 [build-dependencies]

@@ -31,7 +31,7 @@ pub trait UiElement {
         &mut self,
         _queue: &wgpu::Queue,
         _params: Arc<crate::BitFlipperParams>,
-        _bus: &crate::WriteBuffer,
+        _buffer: &[f32],
     ) {
     }
 

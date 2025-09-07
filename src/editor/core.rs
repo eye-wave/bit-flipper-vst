@@ -1,5 +1,6 @@
 use super::{CustomWgpuEditorState, CustomWgpuWindow};
-use crate::{BitFlipperParams, BufHandle};
+use crate::BitFlipperParams;
+use crate::bus::Bus;
 use crossbeam::atomic::AtomicCell;
 use nih_plug::prelude::*;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
@@ -20,7 +21,7 @@ unsafe impl Send for CustomWgpuEditorHandle {}
 
 pub struct CustomWgpuEditor {
     pub(super) params: Arc<BitFlipperParams>,
-    pub(super) bus_handle: BufHandle,
+    pub(super) bus: Arc<Bus>,
 
     /// The scaling factor reported by the host, if any. On macOS this will never be set and we
     /// should use the system scaling factor instead.
@@ -39,7 +40,7 @@ impl Editor for CustomWgpuEditor {
         let gui_context = Arc::clone(&context);
 
         let params = Arc::clone(&self.params);
-        let triple_buffer = Arc::clone(&self.bus_handle);
+        let bus = Arc::clone(&self.bus);
 
         let window = baseview::Window::open_parented(
             &ParentWindowHandleAdapter(parent),
@@ -61,7 +62,7 @@ impl Editor for CustomWgpuEditor {
                 CustomWgpuWindow::new(
                     window,
                     gui_context,
-                    triple_buffer,
+                    bus,
                     params,
                     scaling_factor.unwrap_or(1.0),
                 )

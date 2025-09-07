@@ -1,22 +1,20 @@
 #![feature(array_try_from_fn)]
 
-use buffer::{BufHandle, WriteBuffer};
 use editor::{CustomWgpuEditorState, VIEW_WIDTH, create_editor};
 use model::{BitParams, FlipModes};
 use nih_plug::prelude::*;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+
+use crate::bus::Bus;
 
 mod editor;
 
-pub(crate) mod buffer;
+pub(crate) mod bus;
 pub(crate) mod model;
 
 pub struct BitFlipper {
     params: Arc<BitFlipperParams>,
-
-    buf_size: usize,
-    buf_input: triple_buffer::Input<WriteBuffer>,
-    buf_handle: BufHandle,
+    bus: Arc<Bus>,
 }
 
 pub(crate) const UI_SCALE: usize = 3;
@@ -40,14 +38,9 @@ struct BitFlipperParams {
 
 impl Default for BitFlipper {
     fn default() -> Self {
-        let (input_data, output_data) = triple_buffer::TripleBuffer::default().split();
-
         Self {
             params: Arc::new(BitFlipperParams::default()),
-
-            buf_size: 512,
-            buf_input: input_data,
-            buf_handle: Arc::new(Mutex::new(output_data)),
+            bus: Default::default(),
         }
     }
 }
@@ -111,16 +104,14 @@ impl Plugin for BitFlipper {
     fn initialize(
         &mut self,
         _audio_io_layout: &AudioIOLayout,
-        buffer_config: &BufferConfig,
+        _buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        self.buf_size = buffer_config.max_buffer_size as usize;
-
         true
     }
 
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        create_editor(&self.params, &self.buf_handle)
+        create_editor(&self.params, &self.bus)
     }
 
     fn process(
@@ -129,8 +120,6 @@ impl Plugin for BitFlipper {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
-        let mut output_buf = WriteBuffer::from_size(self.buf_size);
-
         for channel_samples in buffer.iter_samples() {
             let mask = self.params.bits.to_u32();
             let mode = self.params.mode.value();
@@ -139,13 +128,11 @@ impl Plugin for BitFlipper {
             for sample in channel_samples {
                 *sample *= gain;
                 *sample = mode.transform(*sample, mask);
-
-                output_buf.write(*sample);
             }
         }
 
         if self.params.editor_state.is_open() {
-            self.buf_input.write(output_buf);
+            self.bus.send_buffer_summing(buffer);
         }
 
         ProcessStatus::Normal

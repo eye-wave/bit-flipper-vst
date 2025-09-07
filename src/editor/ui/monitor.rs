@@ -201,9 +201,9 @@ impl UiElement for MonitorGroup {
         &mut self,
         queue: &wgpu::Queue,
         params: Arc<crate::BitFlipperParams>,
-        bus: &crate::WriteBuffer,
+        buffer: &[f32],
     ) {
-        let resampled = bus.resample_into::<{ MONITOR_WIDTH as usize }>();
+        let resampled = resample_into::<{ MONITOR_WIDTH as usize }>(buffer);
         let mut remapped = sine_wave::<{ MONITOR_WIDTH as usize }>();
 
         let mask = params.bits.to_u32();
@@ -230,4 +230,27 @@ fn sine_wave<const N: usize>() -> [f32; N] {
     }
 
     samples
+}
+
+fn resample_into<const N: usize>(buffer: &[f32]) -> [f32; N] {
+    let mut out = [0.0; N];
+
+    if buffer.is_empty() {
+        return out;
+    }
+
+    let src_len = buffer.len() as f32;
+    let dst_len = N as f32;
+
+    for (i, item) in out.iter_mut().enumerate().take(N) {
+        let t = i as f32 * (src_len - 1.0) / (dst_len - 1.0);
+        let idx = t.floor() as usize;
+        let frac = t - idx as f32;
+
+        let next_idx = if idx + 1 < buffer.len() { idx + 1 } else { idx };
+
+        *item = buffer[idx] * (1.0 - frac) + buffer[next_idx] * frac;
+    }
+
+    out
 }
