@@ -142,7 +142,7 @@ impl SharedPipeline for SharedMonitorPipeline {
 }
 
 impl UiElement for Monitor {
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.shared_pipeline.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -150,6 +150,9 @@ impl UiElement for Monitor {
     }
 
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
         self
     }
 }
@@ -190,6 +193,9 @@ impl UiElement for MonitorGroup {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -211,7 +217,7 @@ impl UiElement for MonitorGroup {
         self.monitor_2.custom_prerender(queue, &remapped);
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         self.monitor_1.render(render_pass);
         self.monitor_2.render(render_pass);
     }

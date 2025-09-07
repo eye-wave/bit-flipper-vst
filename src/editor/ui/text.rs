@@ -72,6 +72,9 @@ impl<const N: usize> UiElement for Text<N> {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -84,7 +87,7 @@ impl<const N: usize> UiElement for Text<N> {
         }
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         for (b, ch) in self.boxes.iter().zip(self.content.iter()) {
             if *ch != ' ' {
                 b.render(render_pass)
@@ -113,6 +116,9 @@ impl UiElement for VolumeText {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -129,7 +135,7 @@ impl UiElement for VolumeText {
         self.text.prerender(queue, params, bus);
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         self.text.render(render_pass);
     }
 }

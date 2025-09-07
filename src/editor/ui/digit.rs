@@ -76,6 +76,9 @@ impl UiElement for Digit {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -97,7 +100,7 @@ impl UiElement for Digit {
         }
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         self.static_box.render(render_pass);
     }
 }
@@ -127,7 +130,7 @@ impl DigitCluster {
     pub fn new(device: &wgpu::Device, pipeline: Arc<StaticBoxPipeline>) -> Self {
         let mut digits = Vec::<_>::new();
 
-        digits.push(Digit::new(device, 32, (74, 30), pipeline.clone()).unwrap());
+        digits.push(Digit::new(device, 32, (75, 30), pipeline.clone()).unwrap());
 
         for i in 0..8usize {
             let x = 75 + (i & 3) * 11;
@@ -155,6 +158,9 @@ impl UiElement for DigitCluster {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -167,18 +173,23 @@ impl UiElement for DigitCluster {
         }
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         for digi in self.digits.iter() {
             digi.render(render_pass);
         }
     }
 }
 
-#[rustfmt::skip]
 impl UiBox for DigitCluster {
-    fn width(&self) -> u16 { 0 }
-    fn height(&self) -> u16 { 0 }
-    fn position(&self) -> (u16, u16) { (0, 0) }
+    fn width(&self) -> u16 {
+        0
+    }
+    fn height(&self) -> u16 {
+        0
+    }
+    fn position(&self) -> (u16, u16) {
+        (0, 0)
+    }
 }
 
 impl UiInteractive for DigitCluster {}

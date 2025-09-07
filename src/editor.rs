@@ -131,6 +131,7 @@ impl CustomWgpuWindow {
             texture_atlas.clone(),
         ));
 
+        let color_pipeline = Arc::new(ColorBoxPipeline::new(&device, tex_format));
         let monitor_pipeline = Arc::new(SharedMonitorPipeline::new(&device, tex_format));
         let slide_pipe = Arc::new(SliderPipeline::new(
             &device,
@@ -140,7 +141,7 @@ impl CustomWgpuWindow {
 
         let scene_elements: Vec<Box<dyn UiElement>> = vec![
             Box::new(Background::new(bg_pipeline.clone())),
-            Box::new(StaticBox::new(&device, &UV_gui_main, (46, 0), pipe.clone()).unwrap()),
+            Box::new(StaticBox::new(&device, &UV_gui_main, (46, 6), pipe.clone()).unwrap()),
             Box::new(StaticBox::new(&device, &UV_gui_monitors, (18, 154), pipe.clone()).unwrap()),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Xor)),
             Box::new(ModeButtonBuilder::new(&device, pipe.clone()).mode(FlipModes::Or)),
@@ -154,6 +155,7 @@ impl CustomWgpuWindow {
             Box::new(DigitCluster::new(&device, pipe.clone())),
             Box::new(Slider::new(&device, (74, 142), slide_pipe.clone())),
             Box::new(VolumeText::new(&device, (74, 142), pipe.clone()).unwrap()),
+            Box::new(Warning::new(&device, (40, 40), pipe.clone(), color_pipeline).unwrap()),
         ];
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -286,45 +288,60 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                     self.event_store.drag_start = self.event_store.mouse_pos;
 
                     for el in self.scene_elements.iter_mut() {
-                        if let Some(btn) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                        if self
+                            .params
+                            .editor_state
+                            .warning_closed
+                            .load(Ordering::Relaxed)
+                        {
+                            if let Some(btn) = el.as_mut().as_any_mut().downcast_mut::<Button>() {
+                                let mouse_pos = self.event_store.mouse_pos;
+
+                                if btn.is_mouse_over(downscale(mouse_pos)) {
+                                    let setter = ParamSetter::new(&*self.gui_context);
+                                    let norm = self.params.mode.preview_normalized(btn.get_state());
+
+                                    setter.begin_set_parameter(&self.params.mode);
+                                    setter.set_parameter_normalized(&self.params.mode, norm);
+                                    setter.end_set_parameter(&self.params.mode);
+                                }
+
+                                continue;
+                            }
+
+                            if let Some(cluster) = el.as_any_mut().downcast_mut::<DigitCluster>() {
+                                for digit in cluster.digits.iter_mut() {
+                                    if digit.is_mouse_over(downscale(self.event_store.mouse_pos)) {
+                                        if let Some(param) =
+                                            self.params.bits.get_bit_param(digit.id())
+                                        {
+                                            let setter = ParamSetter::new(&*self.gui_context);
+                                            let norm = param.preview_normalized(!param.value());
+
+                                            setter.begin_set_parameter(param);
+                                            setter.set_parameter_normalized(param, norm);
+                                            setter.end_set_parameter(param);
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if let Some(slider) = el.as_mut().as_any_mut().downcast_mut::<Slider>()
+                            {
+                                if slider.is_mouse_over(downscale(self.event_store.mouse_pos)) {
+                                    self.event_store.dragging_slider = true
+                                }
+
+                                continue;
+                            }
+                        } else if let Some(btn) = el.as_any_mut().downcast_mut::<Warning>() {
                             let mouse_pos = self.event_store.mouse_pos;
 
                             if btn.is_mouse_over(downscale(mouse_pos)) {
-                                let setter = ParamSetter::new(&*self.gui_context);
-                                let norm = self.params.mode.preview_normalized(btn.get_state());
-
-                                setter.begin_set_parameter(&self.params.mode);
-                                setter.set_parameter_normalized(&self.params.mode, norm);
-                                setter.end_set_parameter(&self.params.mode);
+                                self.params.editor_state.warning_closed.set(true);
                             }
-
-                            continue;
-                        }
-
-                        if let Some(cluster) = el.as_any_mut().downcast_mut::<DigitCluster>() {
-                            for digit in cluster.digits.iter_mut() {
-                                if digit.is_mouse_over(downscale(self.event_store.mouse_pos)) {
-                                    if let Some(param) = self.params.bits.get_bit_param(digit.id())
-                                    {
-                                        let setter = ParamSetter::new(&*self.gui_context);
-                                        let norm = param.preview_normalized(!param.value());
-
-                                        setter.begin_set_parameter(param);
-                                        setter.set_parameter_normalized(param, norm);
-                                        setter.end_set_parameter(param);
-                                    }
-
-                                    break;
-                                }
-                            }
-                        }
-
-                        if let Some(slider) = el.as_mut().as_any_mut().downcast_mut::<Slider>() {
-                            if slider.is_mouse_over(downscale(self.event_store.mouse_pos)) {
-                                self.event_store.dragging_slider = true
-                            }
-
-                            continue;
                         }
                     }
                 }
@@ -372,6 +389,16 @@ impl baseview::WindowHandler for CustomWgpuWindow {
             _ => {}
         }
 
+        if self
+            .params
+            .editor_state
+            .warning_closed
+            .load(Ordering::Relaxed)
+        {
+            self.scene_elements
+                .retain(|e| e.as_any().downcast_ref::<Warning>().is_none());
+        }
+
         baseview::EventStatus::Captured
     }
 }
@@ -384,6 +411,9 @@ pub struct CustomWgpuEditorState {
     /// Whether the editor's window is currently open.
     #[serde(skip)]
     open: AtomicBool,
+
+    #[serde(skip)]
+    warning_closed: AtomicBool,
 }
 
 impl CustomWgpuEditorState {
@@ -391,6 +421,7 @@ impl CustomWgpuEditorState {
         Arc::new(Self {
             size: AtomicCell::new(size),
             open: AtomicBool::new(false),
+            warning_closed: AtomicBool::new(false),
         })
     }
 

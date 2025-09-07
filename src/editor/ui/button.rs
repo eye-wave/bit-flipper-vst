@@ -53,6 +53,9 @@ impl UiElement for Button {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
     fn prerender(
         &mut self,
@@ -63,7 +66,7 @@ impl UiElement for Button {
         self.is_on = self.state == params.mode.value()
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         if self.is_on {
             self.static_box.render(render_pass);
         }

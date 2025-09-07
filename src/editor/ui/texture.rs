@@ -27,6 +27,7 @@ pub struct TextureAtlas {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum UVSegment {
     UV_background,
+    UV_warning,
     UV_gui_main,
     UV_gui_monitors,
     UV_btn_xor,
@@ -75,49 +76,50 @@ impl UVSegment {
 }
 
 const UV_MAP: &[(UVSegment, [u16; 4])] = &[
-    (UVSegment::UV_background, [100, 50, 200, 150]),
-    (UVSegment::UV_gui_main, [0, 0, 90, 151]),
-    (UVSegment::UV_gui_monitors, [18, 154, 182, 199]),
-    (UVSegment::UV_btn_xor, [100, 33, 116, 49]),
-    (UVSegment::UV_btn_or, [116, 33, 132, 49]),
-    (UVSegment::UV_btn_and, [132, 33, 148, 49]),
-    (UVSegment::UV_btn_not, [148, 33, 164, 49]),
-    (UVSegment::UV_slider_handle, [172, 39, 191, 47]),
+    (UVSegment::UV_background, [107, 89, 100, 100]),
+    (UVSegment::UV_warning, [90, 0, 117, 89]),
+    (UVSegment::UV_gui_main, [0, 0, 88, 145]),
+    (UVSegment::UV_gui_monitors, [0, 189, 163, 45]),
+    (UVSegment::UV_btn_xor, [28, 173, 16, 16]),
+    (UVSegment::UV_btn_or, [44, 173, 16, 16]),
+    (UVSegment::UV_btn_and, [60, 173, 16, 16]),
+    (UVSegment::UV_btn_not, [76, 173, 16, 16]),
+    (UVSegment::UV_slider_handle, [73, 165, 19, 8]),
     //
-    (UVSegment::UV_digi_1_0, [173, 0, 182, 6]),
-    (UVSegment::UV_digi_1_1, [182, 0, 191, 6]),
-    (UVSegment::UV_digi_1_2, [191, 0, 200, 6]),
-    (UVSegment::UV_digi_1_3, [173, 6, 182, 12]),
-    (UVSegment::UV_digi_1_4, [182, 6, 191, 12]),
-    (UVSegment::UV_digi_1_5, [191, 6, 200, 12]),
-    (UVSegment::UV_digi_1_6, [173, 12, 182, 18]),
-    (UVSegment::UV_digi_1_7, [182, 12, 191, 18]),
-    (UVSegment::UV_digi_1_8, [191, 12, 200, 18]),
+    (UVSegment::UV_digi_1_0, [0, 153, 9, 6]),
+    (UVSegment::UV_digi_1_1, [0, 159, 9, 6]),
+    (UVSegment::UV_digi_1_2, [0, 165, 9, 6]),
+    (UVSegment::UV_digi_1_3, [9, 153, 9, 6]),
+    (UVSegment::UV_digi_1_4, [9, 159, 9, 6]),
+    (UVSegment::UV_digi_1_5, [9, 165, 9, 6]),
+    (UVSegment::UV_digi_1_6, [18, 153, 9, 6]),
+    (UVSegment::UV_digi_1_7, [18, 159, 9, 6]),
+    (UVSegment::UV_digi_1_8, [18, 165, 9, 6]),
     //
-    (UVSegment::UV_digi_0_0, [173, 18, 182, 24]),
-    (UVSegment::UV_digi_0_1, [182, 18, 191, 24]),
-    (UVSegment::UV_digi_0_2, [191, 18, 200, 24]),
-    (UVSegment::UV_digi_0_3, [173, 24, 182, 30]),
-    (UVSegment::UV_digi_0_4, [182, 24, 191, 30]),
-    (UVSegment::UV_digi_0_5, [191, 24, 200, 30]),
-    (UVSegment::UV_digi_0_6, [173, 30, 182, 36]),
-    (UVSegment::UV_digi_0_7, [182, 30, 191, 36]),
-    (UVSegment::UV_digi_0_8, [191, 30, 200, 36]),
+    (UVSegment::UV_digi_0_0, [0, 171, 9, 6]),
+    (UVSegment::UV_digi_0_1, [0, 177, 9, 6]),
+    (UVSegment::UV_digi_0_2, [0, 183, 9, 6]),
+    (UVSegment::UV_digi_0_3, [9, 171, 9, 6]),
+    (UVSegment::UV_digi_0_4, [9, 177, 9, 6]),
+    (UVSegment::UV_digi_0_5, [9, 183, 9, 6]),
+    (UVSegment::UV_digi_0_6, [18, 171, 9, 6]),
+    (UVSegment::UV_digi_0_7, [18, 177, 9, 6]),
+    (UVSegment::UV_digi_0_8, [18, 183, 9, 6]),
     //
-    (UVSegment::UV_num_0, [100, 0, 106, 8]),
-    (UVSegment::UV_num_1, [106, 0, 112, 8]),
-    (UVSegment::UV_num_2, [112, 0, 118, 8]),
-    (UVSegment::UV_num_3, [118, 0, 124, 8]),
-    (UVSegment::UV_num_4, [124, 0, 130, 8]),
-    (UVSegment::UV_num_dot, [130, 0, 136, 8]),
-    (UVSegment::UV_num_minus, [136, 0, 142, 8]),
-    (UVSegment::UV_num_5, [100, 8, 106, 16]),
-    (UVSegment::UV_num_6, [106, 8, 112, 16]),
-    (UVSegment::UV_num_7, [112, 8, 118, 16]),
-    (UVSegment::UV_num_8, [118, 8, 124, 16]),
-    (UVSegment::UV_num_9, [124, 8, 130, 16]),
-    (UVSegment::UV_num_d, [130, 8, 136, 16]),
-    (UVSegment::UV_num_B, [136, 8, 142, 16]),
+    (UVSegment::UV_num_0, [50, 145, 6, 8]),
+    (UVSegment::UV_num_1, [56, 145, 6, 8]),
+    (UVSegment::UV_num_2, [62, 145, 6, 8]),
+    (UVSegment::UV_num_3, [68, 145, 6, 8]),
+    (UVSegment::UV_num_4, [74, 145, 6, 8]),
+    (UVSegment::UV_num_dot, [81, 145, 6, 8]),
+    (UVSegment::UV_num_minus, [86, 145, 6, 8]),
+    (UVSegment::UV_num_5, [50, 153, 6, 8]),
+    (UVSegment::UV_num_6, [56, 153, 6, 8]),
+    (UVSegment::UV_num_7, [62, 153, 6, 8]),
+    (UVSegment::UV_num_8, [68, 153, 6, 8]),
+    (UVSegment::UV_num_9, [74, 153, 6, 8]),
+    (UVSegment::UV_num_d, [80, 153, 6, 8]),
+    (UVSegment::UV_num_B, [86, 153, 6, 8]),
 ];
 
 impl TextureAtlas {
@@ -212,18 +214,15 @@ impl TextureAtlas {
     }
 
     pub fn get_uvs(&self, name: &UVSegment) -> Result<[f32; 12], TextureError> {
-        if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
-            let (width, height) = self.tex_size;
+        if let Some([x, y, w, h]) = self.bounds_map.get(name) {
+            let (tex_width, tex_height) = self.tex_size;
 
-            let u0 = *x1 as f32 / width as f32;
-            let v0 = *y1 as f32 / height as f32;
-            let u1 = *x2 as f32 / width as f32;
-            let v1 = *y2 as f32 / height as f32;
+            let u0 = *x as f32 / tex_width as f32;
+            let v0 = *y as f32 / tex_height as f32;
+            let u1 = (*x + *w) as f32 / tex_width as f32;
+            let v1 = (*y + *h) as f32 / tex_height as f32;
 
-            let uvs = [
-                u0, v0, u1, v0, u0, v1, // triangle 1
-                u0, v1, u1, v0, u1, v1, // triangle 2
-            ];
+            let uvs = [u0, v0, u1, v0, u0, v1, u0, v1, u1, v0, u1, v1];
 
             return Ok(uvs);
         }
@@ -232,14 +231,14 @@ impl TextureAtlas {
     }
 
     pub fn get_bounds(&self, name: &UVSegment) -> Result<[f32; 4], TextureError> {
-        if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
-            let (width, height) = self.tex_size;
+        if let Some([x, y, w, h]) = self.bounds_map.get(name) {
+            let (tex_width, tex_height) = self.tex_size;
 
             let bounds = [
-                *x1 as f32 / width as f32,
-                *y1 as f32 / height as f32,
-                (*x2 as f32 - *x1 as f32) / width as f32,
-                (*y2 as f32 - *y1 as f32) / height as f32,
+                *x as f32 / tex_width as f32,
+                *y as f32 / tex_height as f32,
+                *w as f32 / tex_width as f32,
+                *h as f32 / tex_height as f32,
             ];
 
             return Ok(bounds);
@@ -249,11 +248,8 @@ impl TextureAtlas {
     }
 
     pub fn get_size(&self, name: &UVSegment) -> Result<(u16, u16), TextureError> {
-        if let Some([x1, y1, x2, y2]) = self.bounds_map.get(name) {
-            let width = x2 - x1;
-            let height = y2 - y1;
-
-            return Ok((width, height));
+        if let Some([_, _, w, h]) = self.bounds_map.get(name) {
+            return Ok((*w, *h));
         }
 
         Err(name.into_not_found())

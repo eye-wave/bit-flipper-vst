@@ -3,24 +3,28 @@ use std::{any::Any, sync::Arc};
 
 mod background;
 mod button;
+mod color_box;
 mod digit;
 mod monitor;
 mod postprocess;
 mod slider;
 mod static_box;
 mod text;
+mod warning;
 
 pub(super) mod pipeline;
 pub(super) mod texture;
 
 pub use background::*;
 pub use button::*;
+pub use color_box::*;
 pub use digit::*;
 pub use monitor::*;
 pub use postprocess::*;
 pub use slider::*;
 pub use static_box::*;
 pub use text::*;
+pub use warning::*;
 
 pub trait UiElement {
     fn prerender(
@@ -31,8 +35,9 @@ pub trait UiElement {
     ) {
     }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>);
+    fn render(&self, render_pass: &mut wgpu::RenderPass);
     fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub trait UiBox {

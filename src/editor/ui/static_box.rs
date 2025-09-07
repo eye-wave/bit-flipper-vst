@@ -130,8 +130,11 @@ impl UiElement for StaticBox {
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
 
-    fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(self.shared_pipeline.pipeline());
 
         render_pass.set_bind_group(0, &self.shared_pipeline.tex_atlas.bind_group, &[]);
