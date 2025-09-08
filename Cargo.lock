@@ -274,10 +274,11 @@ checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bit_flipper"
-version = "0.3.6"
+version = "0.3.7"
 dependencies = [
  "atomic_float",
  "baseview 0.1.0 (git+https://github.com/RustAudio/baseview.git)",
+ "boxi",
  "bytemuck",
  "crossbeam",
  "crossbeam-channel",
@@ -316,6 +317,14 @@ name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
+
+[[package]]
+name = "boxi"
+version = "0.1.0"
+source = "git+https://github.com/eye-wave/boxi.git#e9f9e9cd04acb18ba154f37011ebebb08fb4cd4d"
+dependencies = [
+ "wgpu",
+]
 
 [[package]]
 name = "bumpalo"

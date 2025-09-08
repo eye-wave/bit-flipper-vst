@@ -1,8 +1,10 @@
-use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
-use crate::{
-    editor::texture::UVSegment::{self, *},
-    model::FlipModes,
-};
+use super::{StaticBox, StaticBoxPipeline, texture::TextureError};
+
+use crate::BitFlipperParams;
+use crate::editor::texture::UVSegment::{self, *};
+use crate::model::FlipModes;
+
+use boxi::prelude::*;
 use std::sync::Arc;
 
 pub struct Button {
@@ -47,16 +49,8 @@ impl UiBox for Button {
     }
 }
 
-impl UiInteractive for Button {}
-
-impl UiElement for Button {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for Button {}
+impl UiElement<BitFlipperParams> for Button {
     fn prerender(
         &mut self,
         _queue: &wgpu::Queue,

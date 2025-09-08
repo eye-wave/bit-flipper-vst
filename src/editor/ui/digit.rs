@@ -1,5 +1,11 @@
-use super::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive, texture::TextureError};
-use crate::editor::texture::UVSegment::{self, *};
+use super::{StaticBox, StaticBoxPipeline, texture::TextureError};
+
+use crate::{
+    BitFlipperParams,
+    editor::texture::UVSegment::{self, *},
+};
+
+use boxi::prelude::*;
 use std::sync::Arc;
 
 pub struct Digit {
@@ -72,14 +78,8 @@ impl Digit {
     }
 }
 
-impl UiElement for Digit {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for Digit {}
+impl UiElement<BitFlipperParams> for Digit {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,
@@ -120,8 +120,6 @@ impl UiBox for Digit {
     }
 }
 
-impl UiInteractive for Digit {}
-
 pub struct DigitCluster {
     pub digits: Vec<Digit>,
 }
@@ -154,14 +152,8 @@ impl DigitCluster {
     }
 }
 
-impl UiElement for DigitCluster {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for DigitCluster {}
+impl UiElement<BitFlipperParams> for DigitCluster {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,
@@ -191,5 +183,3 @@ impl UiBox for DigitCluster {
         (0, 0)
     }
 }
-
-impl UiInteractive for DigitCluster {}

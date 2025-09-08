@@ -1,11 +1,11 @@
-use super::{
-    UiBox, UiElement,
-    pipeline::{SharedPipeline, create_pipeline},
+use crate::{
+    BitFlipperParams,
+    editor::{VIEW_HEIGHT, VIEW_WIDTH},
 };
+
+use boxi::prelude::*;
 use std::{f32::consts::PI, sync::Arc};
 use wgpu::{RenderPipeline, util::DeviceExt};
-
-use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH};
 
 const MONITOR_WIDTH: u16 = 76;
 const MONITOR_HEIGHT: u16 = 42;
@@ -135,25 +135,12 @@ impl Monitor {
     }
 }
 
-impl SharedPipeline for SharedMonitorPipeline {
-    fn pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.pipeline
-    }
-}
-
-impl UiElement for Monitor {
+impl UiElement<BitFlipperParams> for Monitor {
     fn render(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.set_pipeline(&self.shared_pipeline.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.draw(0..MONITOR_WIDTH as u32, 0..1);
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
     }
 }
 
@@ -189,14 +176,7 @@ impl MonitorGroup {
     }
 }
 
-impl UiElement for MonitorGroup {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiElement<BitFlipperParams> for MonitorGroup {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,

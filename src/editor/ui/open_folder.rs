@@ -1,5 +1,8 @@
+use crate::BitFlipperParams;
 use crate::editor::texture::{TextureError, UVSegment};
-use crate::editor::ui::{StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive};
+use crate::editor::ui::{StaticBox, StaticBoxPipeline};
+
+use boxi::prelude::*;
 use std::sync::Arc;
 
 pub struct OpenFolderBtn(StaticBox);
@@ -17,15 +20,8 @@ impl OpenFolderBtn {
     }
 }
 
-impl UiElement for OpenFolderBtn {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for OpenFolderBtn {}
+impl UiElement<BitFlipperParams> for OpenFolderBtn {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,
@@ -53,5 +49,3 @@ impl UiBox for OpenFolderBtn {
         self.0.position()
     }
 }
-
-impl UiInteractive for OpenFolderBtn {}

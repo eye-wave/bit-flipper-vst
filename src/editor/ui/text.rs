@@ -1,8 +1,9 @@
-use crate::editor::texture::{
-    TextureError,
-    UVSegment::{self, *},
-};
-use crate::editor::ui::{StaticBox, StaticBoxPipeline, UiElement};
+use crate::BitFlipperParams;
+use crate::editor::texture::TextureError;
+use crate::editor::texture::UVSegment::{self, *};
+use crate::editor::ui::{StaticBox, StaticBoxPipeline};
+
+use boxi::prelude::*;
 use std::sync::Arc;
 
 pub struct Text<const N: usize> {
@@ -68,14 +69,7 @@ impl<const N: usize> Text<N> {
     }
 }
 
-impl<const N: usize> UiElement for Text<N> {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl<const N: usize> UiElement<BitFlipperParams> for Text<N> {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,
@@ -112,14 +106,7 @@ impl VolumeText {
     }
 }
 
-impl UiElement for VolumeText {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiElement<BitFlipperParams> for VolumeText {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,

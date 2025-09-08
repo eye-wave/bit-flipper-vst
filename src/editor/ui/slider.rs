@@ -1,9 +1,9 @@
-use super::{
-    UiBox, UiElement, UiInteractive,
-    pipeline::{SharedPipeline, create_pipeline},
-    texture::TextureAtlas,
-};
-use crate::editor::texture::UVSegment::*;
+use super::texture::TextureAtlas;
+
+use crate::BitFlipperParams;
+use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH, texture::UVSegment::*};
+
+use boxi::prelude::*;
 use nih_plug::params::Param;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
@@ -100,7 +100,8 @@ impl SliderPipeline {
 impl Slider {
     pub fn new(device: &wgpu::Device, position: (u16, u16), pipeline: Arc<SliderPipeline>) -> Self {
         let (x, y) = position;
-        let pos_data = [x, y, x + 59, y + 8].get_vertices();
+        let pos_data = [x, y, x + 59, y + 8]
+            .get_vertices::<{ VIEW_WIDTH as usize }, { VIEW_HEIGHT as usize }>();
 
         let position_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Position Buffer"),
@@ -150,20 +151,8 @@ impl Slider {
     }
 }
 
-impl SharedPipeline for SliderPipeline {
-    fn pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.pipeline
-    }
-}
-
-impl UiElement for Slider {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for Slider {}
+impl UiElement<BitFlipperParams> for Slider {
     fn prerender(
         &mut self,
         queue: &wgpu::Queue,
@@ -185,7 +174,7 @@ impl UiElement for Slider {
     }
 
     fn render(&self, render_pass: &mut wgpu::RenderPass) {
-        render_pass.set_pipeline(self.shared_pipeline.pipeline());
+        render_pass.set_pipeline(&self.shared_pipeline.pipeline);
 
         render_pass.set_bind_group(0, &self.shared_pipeline.tex_atlas.bind_group, &[]);
         render_pass.set_bind_group(1, &self.uniform_bind_group, &[]);
@@ -210,5 +199,3 @@ impl UiBox for Slider {
         self.position
     }
 }
-
-impl UiInteractive for Slider {}

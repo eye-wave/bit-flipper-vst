@@ -1,10 +1,10 @@
-use std::sync::Arc;
-
+use crate::BitFlipperParams;
 use crate::editor::texture::{TextureError, UVSegment::*};
-use crate::editor::ui::{
-    ColorBox, ColorBoxPipeline, StaticBox, StaticBoxPipeline, UiBox, UiElement, UiInteractive,
-};
+use crate::editor::ui::{ColorBox, ColorBoxPipeline, StaticBox, StaticBoxPipeline};
 use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH};
+
+use boxi::prelude::*;
+use std::sync::Arc;
 
 pub struct Warning {
     position: (u16, u16),
@@ -34,14 +34,8 @@ impl Warning {
     }
 }
 
-impl UiElement for Warning {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiInteractive<BitFlipperParams> for Warning {}
+impl UiElement<BitFlipperParams> for Warning {
     fn render(&self, render_pass: &mut wgpu::RenderPass) {
         self.color_box.render(render_pass);
         self.tex_box.render(render_pass);
@@ -63,5 +57,3 @@ impl UiBox for Warning {
         (x + 104, y + 75)
     }
 }
-
-impl UiInteractive for Warning {}

@@ -2,7 +2,7 @@ cargo-features = ["profile-rustflags", "trim-paths"]
 
 [package]
 name = "bit_flipper"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2024"
 authors = ["_eyewave <89079979+eye-wave@users.noreply.github.com>"]
 license = "GPL-3.0-or-later"
@@ -17,6 +17,7 @@ atomic_float = "0.1"
 baseview = { git = "https://github.com/RustAudio/baseview.git", features = [
     "opengl",
 ] }
+boxi = { git = "https://github.com/eye-wave/boxi.git" }
 bytemuck = "1.23.0"
 crossbeam = "0.8"
 crossbeam-channel = "0.5.15"

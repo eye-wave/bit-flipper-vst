@@ -2,6 +2,8 @@ use crate::bus::Bus;
 use crate::editor::theme::{load_textures, open_theme_dir};
 use crate::model::FlipModes;
 use crate::{BitFlipperParams, UI_SCALE};
+
+use boxi::prelude::*;
 use core::{CustomWgpuEditor, baseview_window_to_surface_target};
 use crossbeam::atomic::AtomicCell;
 use nih_plug::params::persist::PersistentField;
@@ -47,7 +49,7 @@ pub struct CustomWgpuWindow {
     postprocess: Postprocess,
     grayscale_view: wgpu::TextureView,
 
-    scene_elements: Vec<Box<dyn UiElement>>,
+    scene_elements: UiCollection<BitFlipperParams>,
     bus: Arc<Bus>,
 
     params: Arc<BitFlipperParams>,
@@ -142,7 +144,9 @@ impl CustomWgpuWindow {
             texture_atlas.clone(),
         ));
 
-        let scene_elements: Vec<Box<dyn UiElement>> = vec![
+        let mut scene_elements = UiCollection::new();
+
+        scene_elements.batch_append(vec![
             Box::new(Background::new(bg_pipeline.clone())),
             Box::new(StaticBox::new(&device, &UV_gui_main, (46, 6), pipe.clone()).unwrap()),
             Box::new(StaticBox::new(&device, &UV_gui_monitors, (18, 154), pipe.clone()).unwrap()),
@@ -160,7 +164,7 @@ impl CustomWgpuWindow {
             Box::new(Slider::new(&device, (74, 142), slide_pipe.clone())),
             Box::new(VolumeText::new(&device, (74, 142), pipe.clone()).unwrap()),
             Box::new(Warning::new(&device, (40, 40), pipe.clone(), color_pipeline).unwrap()),
-        ];
+        ]);
 
         let grayscale_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Grayscale Render Target"),
@@ -245,7 +249,7 @@ impl baseview::WindowHandler for CustomWgpuWindow {
                 occlusion_query_set: None,
             });
 
-            for element in &self.scene_elements {
+            for element in self.scene_elements.iter() {
                 element.render(&mut rpass);
             }
         }

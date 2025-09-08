@@ -1,8 +1,9 @@
-use crate::editor::texture::UVSegment;
-
-use super::pipeline::{SharedPipeline, create_pipeline};
 use super::texture::{TextureAtlas, TextureError};
-use super::{UiBox, UiElement};
+
+use crate::BitFlipperParams;
+use crate::editor::{VIEW_HEIGHT, VIEW_WIDTH, texture::UVSegment};
+
+use boxi::prelude::*;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
@@ -18,12 +19,6 @@ pub struct StaticBox {
     height: u16,
     uv_buffer: wgpu::Buffer,
     position_buffer: wgpu::Buffer,
-}
-
-impl SharedPipeline for StaticBoxPipeline {
-    fn pipeline(&self) -> &wgpu::RenderPipeline {
-        &self.pipeline
-    }
 }
 
 impl StaticBoxPipeline {
@@ -84,7 +79,9 @@ impl StaticBox {
         let (width, height) = pipeline.tex_atlas.get_size(uv_segment)?;
 
         let (x, y) = position;
-        let pos_data = [x, y, x + width, y + height].get_vertices();
+        let pos_data = [x, y, x + width, y + height]
+            .get_vertices::<{ VIEW_WIDTH as usize }, { VIEW_HEIGHT as usize }>();
+
         let uv_data = pipeline.tex_atlas.get_uvs(uv_segment).unwrap();
 
         let position_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -126,16 +123,9 @@ impl StaticBox {
     }
 }
 
-impl UiElement for StaticBox {
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
-    }
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
+impl UiElement<BitFlipperParams> for StaticBox {
     fn render(&self, render_pass: &mut wgpu::RenderPass) {
-        render_pass.set_pipeline(self.shared_pipeline.pipeline());
+        render_pass.set_pipeline(&self.shared_pipeline.pipeline);
 
         render_pass.set_bind_group(0, &self.shared_pipeline.tex_atlas.bind_group, &[]);
 
